@@ -48,6 +48,8 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
   bool _shellVisible = true;
   NerveShellPanel _shellPanel = NerveShellPanel.main;
   TouchControlsMode _touchControlsMode = TouchControlsMode.auto;
+  double _masterVolume = 0.82;
+  bool _hapticsEnabled = true;
 
   @override
   void initState() {
@@ -137,6 +139,20 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
     });
   }
 
+  void _setMasterVolume(double value) {
+    setState(() {
+      _masterVolume = value.clamp(0, 1).toDouble();
+    });
+    _game.setAudioMasterVolume(_masterVolume);
+  }
+
+  void _setHapticsEnabled(bool enabled) {
+    setState(() {
+      _hapticsEnabled = enabled;
+    });
+    _game.setHapticsEnabled(enabled: enabled);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,6 +223,8 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
                       snapshot: snapshot,
                       settings: NerveShellSettings(
                         touchControlsMode: _touchControlsMode,
+                        masterVolume: _masterVolume,
+                        hapticsEnabled: _hapticsEnabled,
                       ),
                       gameReady: _game.isReady,
                       onPlay: _playFromShell,
@@ -217,6 +235,8 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
                           _showShell(NerveShellPanel.settings),
                       onUnlockMetaNode: _unlockMetaNode,
                       onTouchControlsModeChanged: _setTouchControlsMode,
+                      onMasterVolumeChanged: _setMasterVolume,
+                      onHapticsEnabledChanged: _setHapticsEnabled,
                     );
                   },
                 ),

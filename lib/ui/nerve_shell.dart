@@ -11,9 +11,15 @@ enum NerveShellPanel { main, progression, settings }
 enum TouchControlsMode { auto, alwaysOn }
 
 class NerveShellSettings {
-  const NerveShellSettings({required this.touchControlsMode});
+  const NerveShellSettings({
+    required this.touchControlsMode,
+    required this.masterVolume,
+    required this.hapticsEnabled,
+  });
 
   final TouchControlsMode touchControlsMode;
+  final double masterVolume;
+  final bool hapticsEnabled;
 }
 
 class NerveGameShell extends StatelessWidget {
@@ -28,6 +34,8 @@ class NerveGameShell extends StatelessWidget {
     required this.onShowSettings,
     required this.onUnlockMetaNode,
     required this.onTouchControlsModeChanged,
+    required this.onMasterVolumeChanged,
+    required this.onHapticsEnabledChanged,
     super.key,
   });
 
@@ -41,6 +49,8 @@ class NerveGameShell extends StatelessWidget {
   final VoidCallback onShowSettings;
   final Future<void> Function(String nodeId) onUnlockMetaNode;
   final ValueChanged<TouchControlsMode> onTouchControlsModeChanged;
+  final ValueChanged<double> onMasterVolumeChanged;
+  final ValueChanged<bool> onHapticsEnabledChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +82,8 @@ class NerveGameShell extends StatelessWidget {
                             onUnlockMetaNode: onUnlockMetaNode,
                             onTouchControlsModeChanged:
                                 onTouchControlsModeChanged,
+                            onMasterVolumeChanged: onMasterVolumeChanged,
+                            onHapticsEnabledChanged: onHapticsEnabledChanged,
                           ),
                         );
                         final nav = _ShellNav(
@@ -125,6 +137,8 @@ class _ShellContent extends StatelessWidget {
     required this.onShowSettings,
     required this.onUnlockMetaNode,
     required this.onTouchControlsModeChanged,
+    required this.onMasterVolumeChanged,
+    required this.onHapticsEnabledChanged,
   });
 
   final NerveShellPanel panel;
@@ -136,6 +150,8 @@ class _ShellContent extends StatelessWidget {
   final VoidCallback onShowSettings;
   final Future<void> Function(String nodeId) onUnlockMetaNode;
   final ValueChanged<TouchControlsMode> onTouchControlsModeChanged;
+  final ValueChanged<double> onMasterVolumeChanged;
+  final ValueChanged<bool> onHapticsEnabledChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -160,6 +176,8 @@ class _ShellContent extends StatelessWidget {
           settings: settings,
           onPlay: onPlay,
           onTouchControlsModeChanged: onTouchControlsModeChanged,
+          onMasterVolumeChanged: onMasterVolumeChanged,
+          onHapticsEnabledChanged: onHapticsEnabledChanged,
         );
     }
   }
@@ -339,14 +357,19 @@ class _SettingsPanel extends StatelessWidget {
     required this.settings,
     required this.onPlay,
     required this.onTouchControlsModeChanged,
+    required this.onMasterVolumeChanged,
+    required this.onHapticsEnabledChanged,
   });
 
   final NerveShellSettings settings;
   final VoidCallback onPlay;
   final ValueChanged<TouchControlsMode> onTouchControlsModeChanged;
+  final ValueChanged<double> onMasterVolumeChanged;
+  final ValueChanged<bool> onHapticsEnabledChanged;
 
   @override
   Widget build(BuildContext context) {
+    final volumePercent = (settings.masterVolume * 100).round();
     return _PanelScroll(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,6 +414,59 @@ class _SettingsPanel extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingBlock(
+            icon: Icons.volume_up_rounded,
+            title: 'Master Volume',
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Slider(
+                    value: settings.masterVolume.clamp(0, 1),
+                    min: 0,
+                    max: 1,
+                    divisions: 10,
+                    label: '$volumePercent%',
+                    activeColor: GameTheme.cyan,
+                    inactiveColor: GameTheme.dimSteel.withValues(alpha: 0.32),
+                    onChanged: onMasterVolumeChanged,
+                  ),
+                ),
+                SizedBox(
+                  width: 54,
+                  child: Text(
+                    '$volumePercent%',
+                    textAlign: TextAlign.right,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: GameTheme.cyan,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingBlock(
+            icon: Icons.vibration_rounded,
+            title: 'Haptics',
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              value: settings.hapticsEnabled,
+              activeThumbColor: GameTheme.acid,
+              title: Text(
+                settings.hapticsEnabled ? 'Enabled' : 'Disabled',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: GameTheme.steel,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+              onChanged: onHapticsEnabledChanged,
             ),
           ),
           const SizedBox(height: 14),

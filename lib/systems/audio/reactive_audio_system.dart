@@ -58,6 +58,14 @@ class ReactiveAudioSystem {
     await _playSystemFallback(cue);
   }
 
+  void setMasterVolume(double value) {
+    masterVolume = value.clamp(0, 1).toDouble();
+  }
+
+  void setHapticsEnabled({required bool enabled}) {
+    hapticsEnabled = enabled;
+  }
+
   Future<void> _initializeSoLoud() async {
     try {
       await _soloud.init(bufferSize: 512);

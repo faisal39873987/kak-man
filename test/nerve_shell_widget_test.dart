@@ -34,22 +34,39 @@ void main() {
 
   testWidgets('settings segmented control changes touch mode', (tester) async {
     TouchControlsMode? selectedMode;
+    double? selectedVolume;
+    bool? hapticsEnabled;
 
     await _pumpShell(
       tester,
       panel: NerveShellPanel.settings,
       surface: const Size(420, 720),
       onTouchControlsModeChanged: (mode) => selectedMode = mode,
+      onMasterVolumeChanged: (value) => selectedVolume = value,
+      onHapticsEnabledChanged: (enabled) => hapticsEnabled = enabled,
     );
 
     expect(find.text('Touch Controls'), findsOneWidget);
     expect(find.text('Auto'), findsOneWidget);
     expect(find.text('Always'), findsOneWidget);
+    expect(find.text('Master Volume'), findsOneWidget);
+    expect(find.text('Haptics'), findsOneWidget);
 
     await tester.tap(find.text('Always'));
     await tester.pumpAndSettle();
 
     expect(selectedMode, TouchControlsMode.alwaysOn);
+
+    await tester.drag(find.byType(Slider), const Offset(-140, 0));
+    await tester.pumpAndSettle();
+
+    expect(selectedVolume, isNotNull);
+    expect(selectedVolume, lessThan(0.82));
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(hapticsEnabled, isFalse);
   });
 
   testWidgets('progression panel renders initial meta nodes responsively', (
@@ -86,6 +103,8 @@ Future<void> _pumpShell(
   HudSnapshot? snapshot,
   NerveShellSettings settings = const NerveShellSettings(
     touchControlsMode: TouchControlsMode.auto,
+    masterVolume: 0.82,
+    hapticsEnabled: true,
   ),
   bool gameReady = true,
   VoidCallback? onPlay,
@@ -94,6 +113,8 @@ Future<void> _pumpShell(
   VoidCallback? onShowSettings,
   Future<void> Function(String nodeId)? onUnlockMetaNode,
   ValueChanged<TouchControlsMode>? onTouchControlsModeChanged,
+  ValueChanged<double>? onMasterVolumeChanged,
+  ValueChanged<bool>? onHapticsEnabledChanged,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = surface;
@@ -116,6 +137,8 @@ Future<void> _pumpShell(
             onShowSettings: onShowSettings ?? () {},
             onUnlockMetaNode: onUnlockMetaNode ?? (_) async {},
             onTouchControlsModeChanged: onTouchControlsModeChanged ?? (_) {},
+            onMasterVolumeChanged: onMasterVolumeChanged ?? (_) {},
+            onHapticsEnabledChanged: onHapticsEnabledChanged ?? (_) {},
           ),
         ),
       ),

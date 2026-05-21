@@ -224,6 +224,14 @@ class NerveRunnerGame extends Forge2DGame {
     _refreshHud();
   }
 
+  void setAudioMasterVolume(double value) {
+    audio.setMasterVolume(value);
+  }
+
+  void setHapticsEnabled({required bool enabled}) {
+    audio.setHapticsEnabled(enabled: enabled);
+  }
+
   @override
   void update(double dt) {
     if (!_loaded) {
