@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flame/game.dart';
@@ -9,6 +10,8 @@ import '../../engine/nerve_runner_game.dart';
 import '../../ui/nerve_hud.dart';
 import '../../ui/nerve_shell.dart';
 import '../../ui/touch_controls.dart';
+import '../settings/user_settings.dart';
+import '../settings/user_settings_service.dart';
 import '../theme/game_theme.dart';
 
 class NerveRunnerApp extends StatelessWidget {
@@ -45,6 +48,7 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
     with WidgetsBindingObserver {
   late final NerveRunnerGame _game;
   late final FocusNode _focusNode;
+  final UserSettingsService _settingsService = UserSettingsService();
   bool _shellVisible = true;
   NerveShellPanel _shellPanel = NerveShellPanel.main;
   TouchControlsMode _touchControlsMode = TouchControlsMode.auto;
@@ -62,6 +66,7 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
         _focusNode.requestFocus();
       }
     });
+    unawaited(_loadUserSettings());
   }
 
   @override
@@ -137,6 +142,7 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
     setState(() {
       _touchControlsMode = mode;
     });
+    _persistUserSettings();
   }
 
   void _setMasterVolume(double value) {
@@ -144,6 +150,7 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
       _masterVolume = value.clamp(0, 1).toDouble();
     });
     _game.setAudioMasterVolume(_masterVolume);
+    _persistUserSettings();
   }
 
   void _setHapticsEnabled(bool enabled) {
@@ -151,6 +158,39 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
       _hapticsEnabled = enabled;
     });
     _game.setHapticsEnabled(enabled: enabled);
+    _persistUserSettings();
+  }
+
+  Future<void> _loadUserSettings() async {
+    final settings = await _settingsService.load();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _touchControlsMode = _touchControlsModeFromPreference(
+        settings.touchControls,
+      );
+      _masterVolume = settings.masterVolume;
+      _hapticsEnabled = settings.hapticsEnabled;
+    });
+    _applyAudioSettings();
+  }
+
+  void _persistUserSettings() {
+    unawaited(_settingsService.save(_currentUserSettings()));
+  }
+
+  UserSettings _currentUserSettings() {
+    return UserSettings(
+      touchControls: _touchControlsPreferenceFromMode(_touchControlsMode),
+      masterVolume: _masterVolume,
+      hapticsEnabled: _hapticsEnabled,
+    );
+  }
+
+  void _applyAudioSettings() {
+    _game.setAudioMasterVolume(_masterVolume);
+    _game.setHapticsEnabled(enabled: _hapticsEnabled);
   }
 
   @override
@@ -246,4 +286,22 @@ class _NerveRunnerGameScreenState extends State<NerveRunnerGameScreen>
       ),
     );
   }
+}
+
+TouchControlsMode _touchControlsModeFromPreference(
+  TouchControlsPreference preference,
+) {
+  return switch (preference) {
+    TouchControlsPreference.auto => TouchControlsMode.auto,
+    TouchControlsPreference.alwaysOn => TouchControlsMode.alwaysOn,
+  };
+}
+
+TouchControlsPreference _touchControlsPreferenceFromMode(
+  TouchControlsMode mode,
+) {
+  return switch (mode) {
+    TouchControlsMode.auto => TouchControlsPreference.auto,
+    TouchControlsMode.alwaysOn => TouchControlsPreference.alwaysOn,
+  };
 }
