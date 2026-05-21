@@ -108,31 +108,39 @@ class PlayerEvolutionSystem {
   }
 
   void _evaluate() {
-    if (profile.dashRate > 0.8 && traits.add(EvolutionTrait.blinkRunner)) {
-      dashCostMultiplier = 0.82;
+    if (profile.dashRate > 0.8) {
+      traits.add(EvolutionTrait.blinkRunner);
     }
-    if (profile.shotsFired >= 12 &&
-        profile.accuracy >= 0.62 &&
-        traits.add(EvolutionTrait.deadeye)) {
-      shotDamageMultiplier = 1.22;
+    if (profile.shotsFired >= 12 && profile.accuracy >= 0.62) {
+      traits.add(EvolutionTrait.deadeye);
     }
-    if (profile.aggression > 0.12 && traits.add(EvolutionTrait.bloodPressure)) {
+    if (profile.aggression > 0.12) {
+      traits.add(EvolutionTrait.bloodPressure);
+    }
+    if (profile.lowHealthSeconds >= 8) {
+      traits.add(EvolutionTrait.lastNerve);
+    }
+    if (profile.roomsCleared >= 2 && profile.pace > 0.012) {
+      traits.add(EvolutionTrait.speedChemistry);
+    }
+    if (profile.perfectDodges >= 3 && profile.perfectDodgeRate >= 0.24) {
+      traits.add(EvolutionTrait.phaseSurge);
+    }
+
+    dashCostMultiplier = traits.contains(EvolutionTrait.blinkRunner) ? 0.82 : 1;
+    shotDamageMultiplier = traits.contains(EvolutionTrait.deadeye) ? 1.22 : 1;
+    lowHealthDamageReduction = traits.contains(EvolutionTrait.lastNerve)
+        ? 0.72
+        : 1;
+    staminaRegenMultiplier = 1;
+    if (traits.contains(EvolutionTrait.bloodPressure)) {
       staminaRegenMultiplier = 1.18;
     }
-    if (profile.lowHealthSeconds >= 8 && traits.add(EvolutionTrait.lastNerve)) {
-      lowHealthDamageReduction = 0.72;
-    }
-    if (profile.roomsCleared >= 2 &&
-        profile.pace > 0.012 &&
-        traits.add(EvolutionTrait.speedChemistry)) {
+    if (traits.contains(EvolutionTrait.speedChemistry)) {
       staminaRegenMultiplier = 1.28;
     }
-    if (profile.perfectDodges >= 3 &&
-        profile.perfectDodgeRate >= 0.24 &&
-        traits.add(EvolutionTrait.phaseSurge)) {
-      if (dashCostMultiplier > 0.74) {
-        dashCostMultiplier = 0.74;
-      }
+    if (traits.contains(EvolutionTrait.phaseSurge)) {
+      dashCostMultiplier = 0.74;
       if (staminaRegenMultiplier < 1.12) {
         staminaRegenMultiplier = 1.12;
       }

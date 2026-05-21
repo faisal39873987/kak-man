@@ -54,29 +54,31 @@ class HudSnapshot {
   final SaveSyncStatus saveSyncStatus;
   bool get choosingReward => rewards.isNotEmpty;
 
-  factory HudSnapshot.initial() => const HudSnapshot(
-    health: 5,
-    maxHealth: 5,
-    stamina: 1,
-    combo: 0,
-    comboTimer: 0,
-    score: 0,
-    room: 1,
-    kills: 0,
-    runNerve: 0,
-    bestCombo: 0,
-    bestRoom: 1,
-    heat: 0,
-    weaponOverheated: false,
-    difficulty: 0,
-    musicIntensity: 0,
-    traitLabel: 'UNMUTATED',
-    weaponName: 'NERVE-9',
-    paused: false,
-    dead: false,
-    rewards: <RewardChoice>[],
-    progression: MetaProgressionSnapshot(currency: 0, nodes: <MetaNodeState>[]),
-    showingProgression: false,
-    saveSyncStatus: SaveSyncStatus.localOnly,
-  );
+  factory HudSnapshot.initial() {
+    return HudSnapshot(
+      health: 5,
+      maxHealth: 5,
+      stamina: 1,
+      combo: 0,
+      comboTimer: 0,
+      score: 0,
+      room: 1,
+      kills: 0,
+      runNerve: 0,
+      bestCombo: 0,
+      bestRoom: 1,
+      heat: 0,
+      weaponOverheated: false,
+      difficulty: 0,
+      musicIntensity: 0,
+      traitLabel: 'UNMUTATED',
+      weaponName: 'NERVE-9',
+      paused: false,
+      dead: false,
+      rewards: const <RewardChoice>[],
+      progression: MetaProgressionSystem().snapshot(),
+      showingProgression: false,
+      saveSyncStatus: SaveSyncStatus.localOnly,
+    );
+  }
 }

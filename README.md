@@ -47,3 +47,6 @@ flutter test
 flutter analyze
 flutter build web
 ```
+
+The GitHub Actions workflow in `.github/workflows/flutter-ci.yml` runs the same
+quality gate on pushes and pull requests to `main`.
