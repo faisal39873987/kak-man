@@ -10,6 +10,8 @@ import 'arena_wall.dart';
 import 'combat_room.dart';
 import 'neon_arena_background.dart';
 import 'pulse_hazard.dart';
+import 'room_blueprint.dart';
+import 'room_catalog.dart';
 
 class GeneratedRoom {
   const GeneratedRoom({required this.room, required this.components});
@@ -19,12 +21,19 @@ class GeneratedRoom {
 }
 
 class RoomGenerator {
+  RoomGenerator({RoomCatalog? catalog})
+    : _catalog = catalog ?? RoomCatalog.defaults;
+
+  final RoomCatalog _catalog;
+
   GeneratedRoom generate({
     required int roomIndex,
     required int seed,
     required DynamicDifficultySystem difficulty,
   }) {
     final random = math.Random(seed);
+    final tier = roomTierForIndex(roomIndex);
+    final blueprint = _catalog.select(tier: tier, seed: seed);
     final width =
         GameConstants.roomWidth + random.nextDouble() * 4 + roomIndex * 0.45;
     final height = GameConstants.roomHeight + random.nextDouble() * 3;
@@ -38,6 +47,8 @@ class RoomGenerator {
       bounds: bounds,
       random: random,
       roomIndex: roomIndex,
+      tier: tier,
+      blueprint: blueprint,
     );
     final hazards = _hazards(
       bounds: bounds,
@@ -109,92 +120,17 @@ class RoomGenerator {
     required Rect bounds,
     required math.Random random,
     required int roomIndex,
+    required RoomTier tier,
+    required RoomBlueprint blueprint,
   }) {
-    final layout = roomIndex % 3;
-    final centerY = random.nextDouble() * 2 - 1;
-    final obstacles = <Rect>[];
-
-    switch (layout) {
-      case 0:
-        obstacles
-          ..add(
-            Rect.fromCenter(
-              center: Offset(-1.6, centerY - 3.5),
-              width: 2.2,
-              height: 3.4,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(3.6, centerY + 3.1),
-              width: 2.6,
-              height: 3.1,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(6.8, centerY - 0.2),
-              width: 1.8,
-              height: 2.2,
-            ),
-          );
-      case 1:
-        obstacles
-          ..add(
-            Rect.fromCenter(
-              center: Offset(-0.4, centerY),
-              width: 1.8,
-              height: bounds.height * 0.38,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(5.2, bounds.top + 3.0),
-              width: 4.4,
-              height: 1.2,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(5.2, bounds.bottom - 3.0),
-              width: 4.4,
-              height: 1.2,
-            ),
-          );
-      default:
-        obstacles
-          ..add(
-            Rect.fromCenter(
-              center: Offset(1.6, centerY),
-              width: 4.6,
-              height: 1.15,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(1.6, centerY),
-              width: 1.15,
-              height: 4.8,
-            ),
-          )
-          ..add(
-            Rect.fromCenter(
-              center: Offset(7.4, random.nextBool() ? -4.2 : 4.2),
-              width: 2.4,
-              height: 2.2,
-            ),
-          );
-    }
-
-    if (roomIndex > 4) {
-      obstacles.add(
-        Rect.fromCenter(
-          center: Offset(bounds.right - 8.2, random.nextBool() ? -4.9 : 4.9),
-          width: 3.0,
-          height: 1.15,
-        ),
-      );
-    }
+    final obstacles = blueprint.buildObstacles(
+      RoomBuildContext(
+        bounds: bounds,
+        roomIndex: roomIndex,
+        tier: tier,
+        random: random,
+      ),
+    );
 
     return obstacles
         .where((rect) => bounds.deflate(2.0).contains(rect.topLeft))

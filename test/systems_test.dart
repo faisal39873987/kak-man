@@ -6,6 +6,7 @@ import 'package:one_shot_nerve_runner/progression/reward_choice.dart';
 import 'package:one_shot_nerve_runner/save/game_save_data.dart';
 import 'package:one_shot_nerve_runner/save/save_data_ranker.dart';
 import 'package:one_shot_nerve_runner/systems/combat/combo_chain_system.dart';
+import 'package:one_shot_nerve_runner/weapons/weapon_catalog.dart';
 import 'package:one_shot_nerve_runner/weapons/weapon_upgrade.dart';
 import 'package:test/test.dart';
 
@@ -85,6 +86,7 @@ void main() {
         },
         currentHealth: 5,
         maxHealth: 5,
+        availableWeaponIds: const <String>{WeaponCatalog.defaultWeaponId},
       );
 
       expect(rewards, isNotEmpty);
@@ -92,6 +94,34 @@ void main() {
       expect(rewards.single.effect, RewardEffect.quickPatch);
     },
   );
+
+  test('reward deck can offer concrete weapon swaps', () {
+    final deck = RewardDeck();
+    final rewards = deck.draft(
+      random: math.Random(3),
+      ownedWeaponUpgrades: WeaponUpgrade.values.toSet(),
+      ownedRunEffects: const <RewardEffect>{
+        RewardEffect.dermalPlating,
+        RewardEffect.adrenalBattery,
+        RewardEffect.tensionDividend,
+        RewardEffect.dashBattery,
+      },
+      currentHealth: 5,
+      maxHealth: 5,
+      currentWeaponId: WeaponCatalog.defaultWeaponId,
+    );
+
+    expect(
+      rewards.where((reward) => reward.effect == RewardEffect.weaponSwap),
+      isNotEmpty,
+    );
+    expect(
+      rewards
+          .where((reward) => reward.effect == RewardEffect.weaponSwap)
+          .every((reward) => reward.weaponId != WeaponCatalog.defaultWeaponId),
+      isTrue,
+    );
+  });
 
   test('meta progression respects costs and prerequisites', () {
     final meta = MetaProgressionSystem(currency: 30);

@@ -14,6 +14,7 @@ class NerveHud extends StatelessWidget {
     required this.onOpenProgression,
     required this.onCloseProgression,
     required this.onUnlockMetaNode,
+    this.onOpenMenu,
     super.key,
   });
 
@@ -24,6 +25,7 @@ class NerveHud extends StatelessWidget {
   final VoidCallback onOpenProgression;
   final VoidCallback onCloseProgression;
   final Future<void> Function(String nodeId) onUnlockMetaNode;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class NerveHud extends StatelessWidget {
                   onPause: onPause,
                   onRestart: onRestart,
                   onOpenProgression: onOpenProgression,
+                  onOpenMenu: onOpenMenu,
                 ),
               ),
               Positioned(
@@ -555,12 +558,14 @@ class _RunControls extends StatelessWidget {
     required this.onPause,
     required this.onRestart,
     required this.onOpenProgression,
+    required this.onOpenMenu,
   });
 
   final HudSnapshot snapshot;
   final VoidCallback onPause;
   final Future<void> Function() onRestart;
   final VoidCallback onOpenProgression;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -570,6 +575,14 @@ class _RunControls extends StatelessWidget {
       children: <Widget>[
         if (showSaveStatus) ...<Widget>[
           _SaveStatusPill(status: snapshot.saveSyncStatus),
+          const SizedBox(width: 8),
+        ],
+        if (onOpenMenu != null) ...<Widget>[
+          _HudIconButton(
+            icon: Icons.tune_rounded,
+            tooltip: 'Menu and settings',
+            onPressed: onOpenMenu!,
+          ),
           const SizedBox(width: 8),
         ],
         _HudIconButton(

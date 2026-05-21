@@ -11,6 +11,7 @@ class TouchControls extends StatelessWidget {
     required this.onFireStart,
     required this.onFireEnd,
     required this.onDash,
+    this.forceVisible = false,
     super.key,
   });
 
@@ -20,11 +21,12 @@ class TouchControls extends StatelessWidget {
   final VoidCallback onFireStart;
   final VoidCallback onFireEnd;
   final VoidCallback onDash;
+  final bool forceVisible;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    if (size.width >= 900) {
+    if (size.width >= 900 && !forceVisible) {
       return const SizedBox.shrink();
     }
     return SafeArea(

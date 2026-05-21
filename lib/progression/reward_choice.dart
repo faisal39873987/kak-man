@@ -1,9 +1,12 @@
 import 'dart:math' as math;
 
+import '../weapons/weapon_blueprint.dart';
+import '../weapons/weapon_catalog.dart';
 import '../weapons/weapon_upgrade.dart';
 
 enum RewardEffect {
   weaponUpgrade,
+  weaponSwap,
   dermalPlating,
   adrenalBattery,
   tensionDividend,
@@ -19,6 +22,7 @@ class RewardChoice {
     required this.effect,
     required this.accentArgb,
     this.weaponUpgrade,
+    this.weaponId,
   });
 
   final String id;
@@ -27,6 +31,7 @@ class RewardChoice {
   final RewardEffect effect;
   final int accentArgb;
   final WeaponUpgrade? weaponUpgrade;
+  final String? weaponId;
 }
 
 class RewardPalette {
@@ -59,7 +64,8 @@ class RunUpgradeSystem {
 
   void acquire(RewardChoice choice) {
     if (choice.effect == RewardEffect.quickPatch ||
-        choice.effect == RewardEffect.weaponUpgrade) {
+        choice.effect == RewardEffect.weaponUpgrade ||
+        choice.effect == RewardEffect.weaponSwap) {
       return;
     }
     acquired.add(choice.effect);
@@ -73,8 +79,16 @@ class RewardDeck {
     required Set<RewardEffect> ownedRunEffects,
     required int currentHealth,
     required int maxHealth,
+    String currentWeaponId = WeaponCatalog.defaultWeaponId,
+    Set<String>? availableWeaponIds,
   }) {
+    final weaponIds =
+        availableWeaponIds ??
+        WeaponCatalog.all.map((blueprint) => blueprint.id).toSet();
     final pool = <RewardChoice>[
+      for (final blueprint in WeaponCatalog.all)
+        if (weaponIds.contains(blueprint.id) && blueprint.id != currentWeaponId)
+          _weaponSwapChoice(blueprint),
       for (final upgrade in WeaponUpgrade.values)
         if (!ownedWeaponUpgrades.contains(upgrade)) _weaponChoice(upgrade),
       if (!ownedRunEffects.contains(RewardEffect.dermalPlating))
@@ -159,5 +173,20 @@ class RewardDeck {
         accentArgb: RewardPalette.acid,
       ),
     };
+  }
+
+  RewardChoice _weaponSwapChoice(WeaponBlueprint blueprint) {
+    return RewardChoice(
+      id: 'weapon_swap_${blueprint.id}',
+      title: blueprint.name,
+      subtitle: 'Swap weapon platform for this run',
+      effect: RewardEffect.weaponSwap,
+      weaponId: blueprint.id,
+      accentArgb: switch (blueprint.id) {
+        WeaponCatalog.ionStitcherId => RewardPalette.cyan,
+        WeaponCatalog.voltLanceId => RewardPalette.acid,
+        _ => RewardPalette.magenta,
+      },
+    );
   }
 }

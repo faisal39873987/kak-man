@@ -13,17 +13,17 @@ class NeonArenaBackground extends Component
 
   final Rect bounds;
   final int seed;
-  final math.Random _random = math.Random();
   late final List<_FloorScratch> _scratches;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    final random = math.Random(seed);
     _scratches = List<_FloorScratch>.generate(36, (index) {
-      final x = bounds.left + _random.nextDouble() * bounds.width;
-      final y = bounds.top + _random.nextDouble() * bounds.height;
-      final length = 0.4 + _random.nextDouble() * 2.2;
-      final angle = _random.nextDouble() * math.pi;
+      final x = bounds.left + random.nextDouble() * bounds.width;
+      final y = bounds.top + random.nextDouble() * bounds.height;
+      final length = 0.4 + random.nextDouble() * 2.2;
+      final angle = random.nextDouble() * math.pi;
       return _FloorScratch(Vector2(x, y), length, angle);
     });
   }

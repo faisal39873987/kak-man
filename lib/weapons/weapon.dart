@@ -28,6 +28,7 @@ class WeaponFireContext {
 }
 
 abstract class Weapon {
+  String get id;
   String get name;
   double get heat;
   bool get overheated;

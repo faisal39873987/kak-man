@@ -32,12 +32,14 @@ import '../systems/time/slow_motion_system.dart';
 import '../ui/hud_snapshot.dart';
 import '../weapons/nerve_pistol.dart';
 import '../weapons/weapon.dart';
+import '../weapons/weapon_factory.dart';
 import '../weapons/weapon_upgrade.dart';
 import 'camera/game_camera_controller.dart';
 
 class NerveRunnerGame extends Forge2DGame {
-  NerveRunnerGame()
-    : super(gravity: Vector2.zero(), zoom: GameConstants.worldZoom) {
+  NerveRunnerGame({bool shellPaused = false})
+    : _shellPaused = shellPaused,
+      super(gravity: Vector2.zero(), zoom: GameConstants.worldZoom) {
     cameraController = GameCameraController(this);
     feedback = HitFeedbackSystem(this);
   }
@@ -48,6 +50,7 @@ class NerveRunnerGame extends Forge2DGame {
   );
   final RoomGenerator roomGenerator = RoomGenerator();
   final RewardDeck rewardDeck = RewardDeck();
+  final WeaponFactory weaponFactory = const WeaponFactory();
   final SaveService _saveService = SaveService();
   final math.Random _random = math.Random();
 
@@ -77,6 +80,7 @@ class NerveRunnerGame extends Forge2DGame {
   bool _loaded = false;
   bool _transitioningRoom = false;
   bool _showingProgression = false;
+  bool _shellPaused;
   bool runPaused = false;
   double elapsedTime = 0;
   double _weaponBlockedFeedbackCooldown = 0;
@@ -89,6 +93,7 @@ class NerveRunnerGame extends Forge2DGame {
   int _seed = 1;
 
   double get baseZoom => GameConstants.worldZoom;
+  bool get isReady => _loaded;
 
   @override
   Color backgroundColor() => GameTheme.voidBlack;
@@ -126,7 +131,7 @@ class NerveRunnerGame extends Forge2DGame {
     difficulty = DynamicDifficultySystem();
     combo = ComboChainSystem();
     slowMotion = SlowMotionSystem();
-    weapon = NervePistol();
+    weapon = weaponFactory.createDefault();
     _applyMetaWeaponTuning();
     _weaponBlockedFeedbackCooldown = 0;
     runUpgrades = RunUpgradeSystem();
@@ -170,6 +175,9 @@ class NerveRunnerGame extends Forge2DGame {
   }
 
   void handleKeyEvent(KeyEvent event) {
+    if (!_loaded) {
+      return;
+    }
     final key = event.logicalKey;
     final pressed = event is KeyDownEvent || event is KeyRepeatEvent;
     if (event is KeyUpEvent) {
@@ -193,10 +201,26 @@ class NerveRunnerGame extends Forge2DGame {
   }
 
   void togglePause() {
-    if (player.isDead || _activeRewards.isNotEmpty) {
+    if (!_loaded || player.isDead || _activeRewards.isNotEmpty) {
       return;
     }
     runPaused = !runPaused;
+    _refreshHud();
+  }
+
+  void setShellPaused(bool paused) {
+    _shellPaused = paused;
+    if (paused) {
+      input.isFiring = false;
+      input.clearTouchMovement();
+      input.clearTransient();
+    }
+    _refreshHud();
+  }
+
+  void resumeRun() {
+    runPaused = false;
+    _showingProgression = false;
     _refreshHud();
   }
 
@@ -206,7 +230,10 @@ class NerveRunnerGame extends Forge2DGame {
       super.update(dt);
       return;
     }
-    if (runPaused || _activeRewards.isNotEmpty || _showingProgression) {
+    if (_shellPaused ||
+        runPaused ||
+        _activeRewards.isNotEmpty ||
+        _showingProgression) {
       _refreshHud();
       return;
     }
@@ -424,6 +451,7 @@ class NerveRunnerGame extends Forge2DGame {
       ownedRunEffects: runUpgrades.acquired,
       currentHealth: player.health,
       maxHealth: player.maxHealth,
+      currentWeaponId: weapon.id,
     );
     _refreshHud();
   }
@@ -451,8 +479,19 @@ class NerveRunnerGame extends Forge2DGame {
     if (weaponUpgrade != null) {
       weapon.addUpgrade(weaponUpgrade);
     }
+    final weaponId = reward.weaponId;
+    if (weaponId != null) {
+      final carriedUpgrades = weapon.upgrades.toSet();
+      weapon = weaponFactory.create(
+        weaponId,
+        tuning: weapon.tuning,
+        upgrades: carriedUpgrades,
+      );
+      _applyMetaWeaponTuning();
+    }
     switch (reward.effect) {
       case RewardEffect.weaponUpgrade:
+      case RewardEffect.weaponSwap:
         break;
       case RewardEffect.dermalPlating:
         runUpgrades.acquire(reward);

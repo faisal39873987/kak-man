@@ -1,8 +1,8 @@
 # One Shot: Nerve Runner
 
 Fast neon-dark action survival built with Flutter, Flame, Forge2D, Rive-ready
-animation architecture, reactive audio hooks, local saves, and Supabase-backed
-cloud save sync.
+animation architecture, low-latency reactive audio, local saves, and
+Supabase-backed cloud save sync.
 
 ## Run
 
@@ -43,7 +43,7 @@ backend is ready.
 ## Verify
 
 ```sh
-dart test
+flutter test
 flutter analyze
 flutter build web
 ```
