@@ -43,10 +43,9 @@ backend is ready.
 ## Verify
 
 ```sh
-flutter test
-flutter analyze
-flutter build web
+bash scripts/verify.sh
 ```
 
-The GitHub Actions workflow in `.github/workflows/flutter-ci.yml` runs the same
-quality gate on pushes and pull requests to `main`.
+The verification gate installs dependencies, runs static analysis, executes the
+test suite, and builds the release web artifact. GitHub Actions runs the same
+script on pushes and pull requests to `main`.
