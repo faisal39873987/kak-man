@@ -24,6 +24,17 @@ class ComboChainSystem {
     _timer = GameConstants.comboTimeout;
   }
 
+  void registerPerfectDodge() {
+    chain += 1;
+    if (chain > bestChain) {
+      bestChain = chain;
+    }
+    final dodgeTimer = GameConstants.comboTimeout * 0.72;
+    if (dodgeTimer > _timer) {
+      _timer = dodgeTimer;
+    }
+  }
+
   void registerKill() {
     chain += 1;
     if (chain > bestChain) {

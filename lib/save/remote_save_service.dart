@@ -12,12 +12,13 @@ class RemoteSaveService {
   final SupabaseClient? _client;
 
   SupabaseClient? get _activeClient => _client ?? SupabaseBackend.client;
+  bool get canSync => _activeClient?.auth.currentUser != null;
 
-  Future<GameSaveData?> load() async {
+  Future<RemoteLoadResult> load() async {
     final client = _activeClient;
     final user = client?.auth.currentUser;
     if (client == null || user == null) {
-      return null;
+      return const RemoteLoadResult(canSync: false);
     }
 
     try {
@@ -27,24 +28,27 @@ class RemoteSaveService {
           .eq('player_id', user.id)
           .maybeSingle();
       if (row == null) {
-        return null;
+        return const RemoteLoadResult(canSync: true);
       }
       final saveData = row['save_data'];
       if (saveData is! Map) {
-        return null;
+        return const RemoteLoadResult(canSync: true);
       }
-      return GameSaveData.fromJson(saveData.cast<String, Object?>());
+      return RemoteLoadResult(
+        canSync: true,
+        data: GameSaveData.fromJson(saveData.cast<String, Object?>()),
+      );
     } catch (error, stackTrace) {
       _reportSyncError(error, stackTrace, 'loading remote save');
-      return null;
+      return RemoteLoadResult(canSync: true, error: error);
     }
   }
 
-  Future<void> save(GameSaveData data) async {
+  Future<bool> save(GameSaveData data) async {
     final client = _activeClient;
     final user = client?.auth.currentUser;
     if (client == null || user == null) {
-      return;
+      return false;
     }
 
     try {
@@ -53,8 +57,10 @@ class RemoteSaveService {
         'save_data': data.toJson(),
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
+      return true;
     } catch (error, stackTrace) {
       _reportSyncError(error, stackTrace, 'saving remote progress');
+      return false;
     }
   }
 
@@ -71,4 +77,14 @@ class RemoteSaveService {
       ),
     );
   }
+}
+
+class RemoteLoadResult {
+  const RemoteLoadResult({required this.canSync, this.data, this.error});
+
+  final bool canSync;
+  final GameSaveData? data;
+  final Object? error;
+
+  bool get failed => error != null;
 }

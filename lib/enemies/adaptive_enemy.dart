@@ -42,6 +42,24 @@ class AdaptiveEnemy extends BodyComponent<NerveRunnerGame> {
   Vector2 get spawnPosition => _spawn.clone();
   bool get isTelegraphing => _windupRemaining > 0 || _activeRemaining > 0;
 
+  bool threatensPoint(Vector2 worldPoint) {
+    if (!isTelegraphing) {
+      return false;
+    }
+    final toPoint = worldPoint - body.position;
+    final distance = toPoint.length;
+    if (distance >
+        archetype.attackReach +
+            GameConstants.playerRadius +
+            GameConstants.perfectDodgeThreatMargin) {
+      return false;
+    }
+    if (distance <= 0.0001) {
+      return true;
+    }
+    return toPoint.normalizedOrZero().dot(_attackDirection) > 0.12;
+  }
+
   @override
   Body createBody() {
     final shape = CircleShape()..radius = GameConstants.enemyRadius;

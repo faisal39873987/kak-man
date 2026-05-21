@@ -26,6 +26,21 @@ void main() {
     expect(combo.bestChain, 2);
   });
 
+  test('perfect dodge contributes to combo without requiring a kill', () {
+    final combo = ComboChainSystem();
+
+    combo.registerPerfectDodge();
+    combo.update(0.5);
+
+    expect(combo.chain, 1);
+    expect(combo.bestChain, 1);
+    expect(combo.normalizedTimer, greaterThan(0));
+
+    combo.update(2);
+
+    expect(combo.chain, 0);
+  });
+
   test('player evolution rewards high accuracy', () {
     final evolution = PlayerEvolutionSystem();
 
@@ -38,6 +53,21 @@ void main() {
 
     expect(evolution.traits.contains(EvolutionTrait.deadeye), isTrue);
     expect(evolution.shotDamageMultiplier, greaterThan(1));
+  });
+
+  test('player evolution rewards consistent perfect dodges', () {
+    final evolution = PlayerEvolutionSystem();
+
+    for (var i = 0; i < 6; i += 1) {
+      evolution.registerDash();
+    }
+    for (var i = 0; i < 3; i += 1) {
+      evolution.registerPerfectDodge();
+    }
+
+    expect(evolution.traits.contains(EvolutionTrait.phaseSurge), isTrue);
+    expect(evolution.dashCostMultiplier, lessThan(1));
+    expect(evolution.staminaRegenMultiplier, greaterThan(1));
   });
 
   test(

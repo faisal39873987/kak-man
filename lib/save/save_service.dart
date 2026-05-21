@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'game_save_data.dart';
 import 'remote_save_service.dart';
 import 'save_data_ranker.dart';
+import 'save_sync_status.dart';
 
 class SaveService {
   SaveService({RemoteSaveService? remote})
@@ -13,21 +14,47 @@ class SaveService {
   static const String _saveKey = 'one_shot_nerve_runner.save.v1';
 
   final RemoteSaveService _remote;
+  SaveSyncStatus _syncStatus = SaveSyncStatus.localOnly;
+
+  SaveSyncStatus get syncStatus => _syncStatus;
 
   Future<GameSaveData> load() async {
     final local = await _loadLocal();
+    _syncStatus = SaveSyncStatus.syncing;
     final remote = await _remote.load();
-    if (remote == null) {
+    if (!remote.canSync) {
+      _syncStatus = SaveSyncStatus.localOnly;
       return local;
     }
-    final richest = SaveDataRanker.richest(local, remote);
+    if (remote.failed) {
+      _syncStatus = SaveSyncStatus.remoteError;
+      return local;
+    }
+    final remoteData = remote.data;
+    if (remoteData == null) {
+      _syncStatus = await _remote.save(local)
+          ? SaveSyncStatus.synced
+          : SaveSyncStatus.remoteError;
+      return local;
+    }
+    final richest = SaveDataRanker.richest(local, remoteData);
     await _saveLocal(richest);
+    _syncStatus = await _remote.save(richest)
+        ? SaveSyncStatus.synced
+        : SaveSyncStatus.remoteError;
     return richest;
   }
 
   Future<void> save(GameSaveData data) async {
     await _saveLocal(data);
-    await _remote.save(data);
+    if (!_remote.canSync) {
+      _syncStatus = SaveSyncStatus.localOnly;
+      return;
+    }
+    _syncStatus = SaveSyncStatus.syncing;
+    _syncStatus = await _remote.save(data)
+        ? SaveSyncStatus.synced
+        : SaveSyncStatus.remoteError;
   }
 
   Future<GameSaveData> _loadLocal() async {

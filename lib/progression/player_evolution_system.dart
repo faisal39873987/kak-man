@@ -6,12 +6,14 @@ enum EvolutionTrait {
   bloodPressure,
   lastNerve,
   speedChemistry,
+  phaseSurge,
 }
 
 class PlayerBehaviorProfile {
   int shotsFired = 0;
   int shotsHit = 0;
   int dashes = 0;
+  int perfectDodges = 0;
   int closeRangeKills = 0;
   int lowHealthSeconds = 0;
   double _lowHealthTime = 0;
@@ -22,12 +24,14 @@ class PlayerBehaviorProfile {
   double get accuracy => shotsFired == 0 ? 0 : shotsHit / shotsFired;
   double get aggression => runTime <= 0 ? 0 : closeRangeKills / runTime;
   double get dashRate => runTime <= 0 ? 0 : dashes / runTime;
+  double get perfectDodgeRate => dashes == 0 ? 0 : perfectDodges / dashes;
   double get pace => runTime <= 0 ? 0 : roomsCleared / runTime;
 
   Map<String, Object> toJson() => <String, Object>{
     'shotsFired': shotsFired,
     'shotsHit': shotsHit,
     'dashes': dashes,
+    'perfectDodges': perfectDodges,
     'closeRangeKills': closeRangeKills,
     'lowHealthSeconds': lowHealthSeconds,
     'runTime': runTime,
@@ -39,6 +43,7 @@ class PlayerBehaviorProfile {
     shotsFired = (json['shotsFired'] as num?)?.toInt() ?? shotsFired;
     shotsHit = (json['shotsHit'] as num?)?.toInt() ?? shotsHit;
     dashes = (json['dashes'] as num?)?.toInt() ?? dashes;
+    perfectDodges = (json['perfectDodges'] as num?)?.toInt() ?? perfectDodges;
     closeRangeKills =
         (json['closeRangeKills'] as num?)?.toInt() ?? closeRangeKills;
     lowHealthSeconds =
@@ -72,6 +77,11 @@ class PlayerEvolutionSystem {
 
   void registerDash() {
     profile.dashes += 1;
+    _evaluate();
+  }
+
+  void registerPerfectDodge() {
+    profile.perfectDodges += 1;
     _evaluate();
   }
 
@@ -116,6 +126,16 @@ class PlayerEvolutionSystem {
         profile.pace > 0.012 &&
         traits.add(EvolutionTrait.speedChemistry)) {
       staminaRegenMultiplier = 1.28;
+    }
+    if (profile.perfectDodges >= 3 &&
+        profile.perfectDodgeRate >= 0.24 &&
+        traits.add(EvolutionTrait.phaseSurge)) {
+      if (dashCostMultiplier > 0.74) {
+        dashCostMultiplier = 0.74;
+      }
+      if (staminaRegenMultiplier < 1.12) {
+        staminaRegenMultiplier = 1.12;
+      }
     }
   }
 

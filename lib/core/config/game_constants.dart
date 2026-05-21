@@ -14,6 +14,10 @@ class GameConstants {
   static const double staminaMax = 100;
   static const double staminaRegenPerSecond = 34;
   static const double dashStaminaCost = 28;
+  static const double perfectDodgeThreatMargin = 0.36;
+  static const double perfectDodgeStaminaRefund = 18;
+  static const double perfectDodgeInvulnerabilitySeconds = 0.18;
+  static const int perfectDodgeScore = 75;
 
   static const int playerMaxHealth = 5;
   static const double invulnerabilitySeconds = 0.62;

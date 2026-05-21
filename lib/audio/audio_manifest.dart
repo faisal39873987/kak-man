@@ -4,6 +4,7 @@ enum AudioCue {
   coverHit,
   kill,
   dash,
+  perfectDodge,
   playerHurt,
   roomClear,
   bossPhase,

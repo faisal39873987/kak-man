@@ -70,6 +70,7 @@ class NerveRunnerGame extends Forge2DGame {
   final List<BulletProjectile> bullets = <BulletProjectile>[];
   final List<ArenaObstacle> obstructions = <ArenaObstacle>[];
   final List<Component> _roomComponents = <Component>[];
+  final Set<AdaptiveEnemy> _perfectDodgeClaims = <AdaptiveEnemy>{};
   List<RewardChoice> _activeRewards = <RewardChoice>[];
 
   GameSaveData _saveData = GameSaveData.fresh();
@@ -221,6 +222,7 @@ class NerveRunnerGame extends Forge2DGame {
 
     super.update(scaledDt);
     _cleanupLists();
+    _detectPerfectDodges();
 
     difficulty.update(
       dt: scaledDt,
@@ -307,6 +309,7 @@ class NerveRunnerGame extends Forge2DGame {
   }
 
   void onPlayerDash(Vector2 position, Vector2 direction) {
+    _perfectDodgeClaims.clear();
     feedback.dash(position, direction);
     world.add(
       // Reuse impact particles as a directional exhaust burst.
@@ -524,11 +527,36 @@ class NerveRunnerGame extends Forge2DGame {
       metaProgression: metaProgression.toJson(),
     );
     await _saveService.save(_saveData);
+    _refreshHud();
   }
 
   void _cleanupLists() {
     enemies.removeWhere((enemy) => enemy.isDead || !enemy.isMounted);
     bullets.removeWhere((bullet) => bullet.spent || !bullet.isMounted);
+    _perfectDodgeClaims.removeWhere(
+      (enemy) => enemy.isDead || !enemy.isMounted,
+    );
+  }
+
+  void _detectPerfectDodges() {
+    if (!player.isDashing) {
+      _perfectDodgeClaims.clear();
+      return;
+    }
+    for (final enemy in enemies) {
+      if (_perfectDodgeClaims.contains(enemy) ||
+          enemy.isDead ||
+          !enemy.threatensPoint(player.position)) {
+        continue;
+      }
+      _perfectDodgeClaims.add(enemy);
+      player.rewardPerfectDodge();
+      evolution.registerPerfectDodge();
+      combo.registerPerfectDodge();
+      score += (GameConstants.perfectDodgeScore * combo.multiplier).round();
+      feedback.perfectDodge(player.position);
+      break;
+    }
   }
 
   void _refreshHud() {
@@ -558,6 +586,7 @@ class NerveRunnerGame extends Forge2DGame {
       rewards: _activeRewards,
       progression: metaProgression.snapshot(),
       showingProgression: _showingProgression,
+      saveSyncStatus: _saveService.syncStatus,
     );
   }
 }

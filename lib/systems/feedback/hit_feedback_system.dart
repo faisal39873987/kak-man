@@ -85,6 +85,31 @@ class HitFeedbackSystem {
     game.cameraController.kick(0.12);
   }
 
+  void perfectDodge(Vector2 position) {
+    game.world.add(
+      RingPulse(
+        position: position,
+        color: GameTheme.acid,
+        startRadius: 0.34,
+        endRadius: 1.45,
+        lifetime: 0.18,
+        strokeWidth: 0.075,
+      ),
+    );
+    game.world.add(
+      ImpactBurst(
+        position: position,
+        color: GameTheme.cyan,
+        particleCount: 12,
+        lifetime: 0.22,
+        speed: 7.4,
+      ),
+    );
+    game.cameraController.kick(0.13);
+    game.slowMotion.trigger(duration: 0.08, scale: 0.48);
+    game.audio.cue(AudioCue.perfectDodge);
+  }
+
   void roomClear(Vector2 position) {
     game.world.add(
       RingPulse(

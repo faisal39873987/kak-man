@@ -1,5 +1,6 @@
 import '../progression/meta_progression.dart';
 import '../progression/reward_choice.dart';
+import '../save/save_sync_status.dart';
 
 class HudSnapshot {
   const HudSnapshot({
@@ -25,6 +26,7 @@ class HudSnapshot {
     required this.rewards,
     required this.progression,
     required this.showingProgression,
+    required this.saveSyncStatus,
   });
 
   final int health;
@@ -49,6 +51,7 @@ class HudSnapshot {
   final List<RewardChoice> rewards;
   final MetaProgressionSnapshot progression;
   final bool showingProgression;
+  final SaveSyncStatus saveSyncStatus;
   bool get choosingReward => rewards.isNotEmpty;
 
   factory HudSnapshot.initial() => const HudSnapshot(
@@ -74,5 +77,6 @@ class HudSnapshot {
     rewards: <RewardChoice>[],
     progression: MetaProgressionSnapshot(currency: 0, nodes: <MetaNodeState>[]),
     showingProgression: false,
+    saveSyncStatus: SaveSyncStatus.localOnly,
   );
 }

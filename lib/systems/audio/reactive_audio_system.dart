@@ -33,6 +33,9 @@ class ReactiveAudioSystem {
         await HapticFeedback.heavyImpact();
       case AudioCue.dash:
         await HapticFeedback.lightImpact();
+      case AudioCue.perfectDodge:
+        await HapticFeedback.selectionClick();
+        await HapticFeedback.lightImpact();
       case AudioCue.playerHurt:
         await HapticFeedback.mediumImpact();
       case AudioCue.roomClear:

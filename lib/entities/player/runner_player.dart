@@ -147,6 +147,17 @@ class RunnerPlayer extends BodyComponent<NerveRunnerGame> {
       game.evolution.dashCostMultiplier *
       game.metaProgression.dashCostMultiplier;
 
+  void rewardPerfectDodge() {
+    stamina = (stamina + GameConstants.perfectDodgeStaminaRefund).clamp(
+      0,
+      maxStamina,
+    );
+    _invulnerability = math.max(
+      _invulnerability,
+      GameConstants.perfectDodgeInvulnerabilitySeconds,
+    );
+  }
+
   bool takeDamage(int amount, Vector2 source) {
     if (isDead || isInvulnerable) {
       return false;

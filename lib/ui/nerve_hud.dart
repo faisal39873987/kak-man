@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/theme/game_theme.dart';
+import '../save/save_sync_status.dart';
 import 'hud_snapshot.dart';
 
 class NerveHud extends StatelessWidget {
@@ -563,9 +564,14 @@ class _RunControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showSaveStatus = MediaQuery.sizeOf(context).width >= 760;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        if (showSaveStatus) ...<Widget>[
+          _SaveStatusPill(status: snapshot.saveSyncStatus),
+          const SizedBox(width: 8),
+        ],
         _HudIconButton(
           icon: snapshot.paused
               ? Icons.play_arrow_rounded
@@ -621,6 +627,8 @@ class _RunStatePanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                _SaveStatusLine(status: snapshot.saveSyncStatus),
+                const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -645,6 +653,124 @@ class _RunStatePanel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _SaveStatusPill extends StatelessWidget {
+  const _SaveStatusPill({required this.status});
+
+  final SaveSyncStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _statusColor(status);
+    return Tooltip(
+      message: _statusTooltip(status),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: GameTheme.panel,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: SizedBox(
+          height: 42,
+          width: 88,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(_statusIcon(status), color: color, size: 17),
+              const SizedBox(width: 6),
+              Text(
+                _statusLabel(status),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SaveStatusLine extends StatelessWidget {
+  const _SaveStatusLine({required this.status});
+
+  final SaveSyncStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _statusColor(status);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(_statusIcon(status), color: color, size: 17),
+        const SizedBox(width: 7),
+        Text(
+          _statusTooltip(status),
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Color _statusColor(SaveSyncStatus status) {
+  switch (status) {
+    case SaveSyncStatus.localOnly:
+      return GameTheme.dimSteel;
+    case SaveSyncStatus.syncing:
+      return GameTheme.cyan;
+    case SaveSyncStatus.synced:
+      return GameTheme.acid;
+    case SaveSyncStatus.remoteError:
+      return GameTheme.warning;
+  }
+}
+
+IconData _statusIcon(SaveSyncStatus status) {
+  switch (status) {
+    case SaveSyncStatus.localOnly:
+      return Icons.storage_rounded;
+    case SaveSyncStatus.syncing:
+      return Icons.cloud_sync_rounded;
+    case SaveSyncStatus.synced:
+      return Icons.cloud_done_rounded;
+    case SaveSyncStatus.remoteError:
+      return Icons.cloud_off_rounded;
+  }
+}
+
+String _statusLabel(SaveSyncStatus status) {
+  switch (status) {
+    case SaveSyncStatus.localOnly:
+      return 'LOCAL';
+    case SaveSyncStatus.syncing:
+      return 'SYNC';
+    case SaveSyncStatus.synced:
+      return 'CLOUD';
+    case SaveSyncStatus.remoteError:
+      return 'WARN';
+  }
+}
+
+String _statusTooltip(SaveSyncStatus status) {
+  switch (status) {
+    case SaveSyncStatus.localOnly:
+      return 'Local save active';
+    case SaveSyncStatus.syncing:
+      return 'Cloud save syncing';
+    case SaveSyncStatus.synced:
+      return 'Cloud save synced';
+    case SaveSyncStatus.remoteError:
+      return 'Cloud save unavailable';
   }
 }
 
