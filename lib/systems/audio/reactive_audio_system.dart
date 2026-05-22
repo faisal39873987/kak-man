@@ -1,21 +1,26 @@
-import 'dart:math' as math;
-
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
 import '../../audio/audio_manifest.dart';
+import 'audio_mix_director.dart';
 
 class ReactiveAudioSystem {
-  double musicIntensity = 0;
+  ReactiveAudioSystem({AudioMixDirector? director})
+    : _director = director ?? AudioMixDirector();
+
   bool assetPlaybackEnabled = false;
   bool hapticsEnabled = true;
-  double masterVolume = 0.82;
 
+  final AudioMixDirector _director;
   final SoLoud _soloud = SoLoud.instance;
   final Map<AudioCue, AudioSource> _sources = <AudioCue, AudioSource>{};
-  final Map<AudioCue, double> _cooldowns = <AudioCue, double>{};
+  final Map<AudioBus, Bus> _buses = <AudioBus, Bus>{};
+
+  double get musicIntensity => _director.musicIntensity;
+
+  double get masterVolume => _director.masterVolume;
 
   Future<void> initialize() async {
     FlameAudio.bgm.initialize();
@@ -28,38 +33,29 @@ class ReactiveAudioSystem {
     required int playerHealth,
     required int combo,
   }) {
-    final target =
-        (activeEnemies * 0.11 + combo * 0.025 + (playerHealth <= 2 ? 0.22 : 0))
-            .clamp(0, 1);
-    musicIntensity += (target - musicIntensity) * (dt * 3.5).clamp(0, 1);
-    for (final entry in Map<AudioCue, double>.of(_cooldowns).entries) {
-      final next = entry.value - dt;
-      if (next <= 0) {
-        _cooldowns.remove(entry.key);
-      } else {
-        _cooldowns[entry.key] = next;
-      }
-    }
+    _director.update(
+      dt: dt,
+      activeEnemies: activeEnemies,
+      playerHealth: playerHealth,
+      combo: combo,
+    );
   }
 
   Future<void> cue(AudioCue cue) async {
-    if (_cooldowns.containsKey(cue)) {
+    final plan = _director.cue(cue);
+    if (plan == null) {
       return;
     }
-    final mix =
-        AudioManifest.cueMixes[cue] ??
-        const AudioCueMix(volume: 0.35, cooldown: 0.04);
-    _cooldowns[cue] = mix.cooldown;
 
     await _playHaptic(cue);
-    if (_playAsset(cue, mix)) {
+    if (_playAsset(plan)) {
       return;
     }
     await _playSystemFallback(cue);
   }
 
   void setMasterVolume(double value) {
-    masterVolume = value.clamp(0, 1).toDouble();
+    _director.masterVolume = value;
   }
 
   void setHapticsEnabled({required bool enabled}) {
@@ -69,6 +65,8 @@ class ReactiveAudioSystem {
   Future<void> _initializeSoLoud() async {
     try {
       await _soloud.init(bufferSize: 512);
+      _soloud.setMaxActiveVoiceCount(32);
+      _initializeBuses();
       for (final entry in AudioManifest.cueAssets.entries) {
         _sources[entry.key] = await _soloud.loadAsset('assets/${entry.value}');
       }
@@ -76,6 +74,7 @@ class ReactiveAudioSystem {
     } catch (error, stackTrace) {
       assetPlaybackEnabled = false;
       _sources.clear();
+      _buses.clear();
       if (kDebugMode) {
         FlutterError.reportError(
           FlutterErrorDetails(
@@ -86,6 +85,16 @@ class ReactiveAudioSystem {
           ),
         );
       }
+    }
+  }
+
+  void _initializeBuses() {
+    _buses.clear();
+    for (final bus in AudioBus.values) {
+      final mixBus = Bus(name: 'nerve_${bus.name}');
+      final handle = mixBus.playOnEngine();
+      _soloud.setProtectVoice(handle, true);
+      _buses[bus] = mixBus;
     }
   }
 
@@ -118,20 +127,25 @@ class ReactiveAudioSystem {
     }
   }
 
-  bool _playAsset(AudioCue cue, AudioCueMix mix) {
+  bool _playAsset(AudioPlaybackPlan plan) {
     if (!assetPlaybackEnabled) {
       return false;
     }
-    final source = _sources[cue];
+    final source = _sources[plan.cue];
     if (source == null) {
       return false;
     }
     try {
-      _soloud.play(
-        source,
-        volume: (mix.volume * masterVolume).clamp(0, 1),
-        pan: _panForCue(cue),
-      );
+      final bus = _buses[plan.bus];
+      final handle = bus == null
+          ? _soloud.play(source, volume: plan.volume, pan: plan.pan)
+          : bus.play(source, volume: plan.volume, pan: plan.pan);
+      if (plan.playbackRate != 1) {
+        _soloud.setRelativePlaySpeed(handle, plan.playbackRate);
+      }
+      if (plan.protectVoice) {
+        _soloud.setProtectVoice(handle, true);
+      }
       return true;
     } catch (error, stackTrace) {
       assetPlaybackEnabled = false;
@@ -141,7 +155,7 @@ class ReactiveAudioSystem {
             exception: error,
             stack: stackTrace,
             library: 'one_shot_nerve_runner.audio',
-            context: ErrorDescription('playing SoLoud cue ${cue.name}'),
+            context: ErrorDescription('playing SoLoud cue ${plan.cue.name}'),
           ),
         );
       }
@@ -165,27 +179,6 @@ class ReactiveAudioSystem {
       case AudioCue.bossPhase:
       case AudioCue.weaponOverheat:
         break;
-    }
-  }
-
-  double _panForCue(AudioCue cue) {
-    final wobble = math.sin(musicIntensity * math.pi * 2);
-    switch (cue) {
-      case AudioCue.shot:
-      case AudioCue.hit:
-      case AudioCue.coverHit:
-        return wobble * 0.08;
-      case AudioCue.dash:
-      case AudioCue.perfectDodge:
-        return wobble * 0.12;
-      case AudioCue.kill:
-      case AudioCue.playerHurt:
-      case AudioCue.roomClear:
-      case AudioCue.bossPhase:
-      case AudioCue.hazardWarning:
-      case AudioCue.weaponOverheat:
-      case AudioCue.rewardSelect:
-        return 0;
     }
   }
 }

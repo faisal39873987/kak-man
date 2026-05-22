@@ -124,6 +124,17 @@ void main() {
   test('audio manifest covers every cue with sane asset and mix data', () {
     expect(AudioManifest.cueAssets.keys, unorderedEquals(AudioCue.values));
     expect(AudioManifest.cueMixes.keys, unorderedEquals(AudioCue.values));
+    expect(AudioManifest.busVolumes.keys, unorderedEquals(AudioBus.values));
+
+    for (final entry in AudioManifest.busVolumes.entries) {
+      expect(entry.value.isFinite, isTrue, reason: '${entry.key.name} bus');
+      expect(entry.value, greaterThan(0), reason: '${entry.key.name} bus');
+      expect(
+        entry.value,
+        lessThanOrEqualTo(1),
+        reason: '${entry.key.name} bus',
+      );
+    }
 
     final assetPaths = <String>{};
     for (final cue in AudioCue.values) {
@@ -159,6 +170,22 @@ void main() {
         lessThanOrEqualTo(1),
         reason: '${cue.name} cooldown should stay responsive',
       );
+      expect(
+        AudioManifest.busVolumes[mix.bus],
+        isNotNull,
+        reason: '${cue.name} routes to an unmixed bus',
+      );
+      expect(mix.priority, greaterThanOrEqualTo(0), reason: cue.name);
+      expect(mix.priority, lessThanOrEqualTo(100), reason: cue.name);
+      expect(mix.pitchVariance.isFinite, isTrue, reason: cue.name);
+      expect(mix.pitchVariance, greaterThanOrEqualTo(0), reason: cue.name);
+      expect(mix.pitchVariance, lessThanOrEqualTo(0.08), reason: cue.name);
+      expect(mix.intensityGain.isFinite, isTrue, reason: cue.name);
+      expect(mix.intensityGain, greaterThanOrEqualTo(0), reason: cue.name);
+      expect(mix.intensityGain, lessThanOrEqualTo(0.35), reason: cue.name);
+      expect(mix.ducking.isFinite, isTrue, reason: cue.name);
+      expect(mix.ducking, greaterThanOrEqualTo(0), reason: cue.name);
+      expect(mix.ducking, lessThanOrEqualTo(0.7), reason: cue.name);
     }
   });
 }
