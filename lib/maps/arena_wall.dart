@@ -7,10 +7,12 @@ import '../core/theme/game_theme.dart';
 import '../engine/nerve_runner_game.dart';
 
 class ArenaWall extends BodyComponent<NerveRunnerGame> {
-  ArenaWall(this.start, this.end) : super(renderBody: false, priority: 12);
+  ArenaWall(this.start, this.end, {this.color = GameTheme.cyan})
+    : super(renderBody: false, priority: 12);
 
   final Vector2 start;
   final Vector2 end;
+  final Color color;
 
   @override
   Body createBody() {
@@ -23,14 +25,19 @@ class ArenaWall extends BodyComponent<NerveRunnerGame> {
   @override
   void render(Canvas canvas) {
     final paint = Paint()
-      ..color = GameTheme.cyan.withValues(alpha: 0.65)
+      ..color = color.withValues(alpha: 0.72)
       ..strokeWidth = 0.06
       ..strokeCap = StrokeCap.square;
     final glow = Paint()
-      ..color = GameTheme.cyan.withValues(alpha: 0.18)
+      ..color = color.withValues(alpha: 0.2)
       ..strokeWidth = 0.22
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.3);
+    final inner = Paint()
+      ..color = GameTheme.voidBlack.withValues(alpha: 0.75)
+      ..strokeWidth = 0.018
+      ..strokeCap = StrokeCap.square;
     canvas.drawLine(start.toOffset(), end.toOffset(), glow);
     canvas.drawLine(start.toOffset(), end.toOffset(), paint);
+    canvas.drawLine(start.toOffset(), end.toOffset(), inner);
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:flame/components.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 
 import '../../core/config/game_constants.dart';
@@ -193,30 +192,126 @@ class RunnerPlayer extends BodyComponent<NerveRunnerGame> {
   @override
   void render(Canvas canvas) {
     final invulnAlpha = isInvulnerable ? 0.52 : 1.0;
+    final aim = game.input.aimWorld.length2 > 0.0001
+        ? game.input.aimWorld.normalizedOrZero()
+        : Vector2(1, 0);
+    final accent = isDashing ? GameTheme.acid : GameTheme.cyan;
     final glow = Paint()
-      ..color = GameTheme.cyan.withValues(alpha: 0.18 * invulnAlpha)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.28);
-    final bodyPaint = Paint()
-      ..color = (isDashing ? GameTheme.acid : GameTheme.cyan).withValues(
-        alpha: invulnAlpha,
+      ..color = accent.withValues(alpha: 0.2 * invulnAlpha)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.34);
+    final shadow = Paint()
+      ..color = GameTheme.voidBlack.withValues(alpha: 0.58)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.16);
+    final suitPaint = Paint()
+      ..shader = Gradient.linear(
+        const Offset(-0.48, -0.48),
+        const Offset(0.62, 0.62),
+        <Color>[
+          Color.lerp(GameTheme.voidBlack, accent, 0.34)!,
+          GameTheme.voidBlack,
+        ],
       );
-    final corePaint = Paint()..color = GameTheme.voidBlack;
-    final aimPaint = Paint()
+    final armorPaint = Paint()
+      ..color = accent.withValues(alpha: 0.82 * invulnAlpha);
+    final visorPaint = Paint()
       ..color = GameTheme.acid
       ..strokeWidth = 0.045
       ..strokeCap = StrokeCap.round;
+    final weaponPaint = Paint()
+      ..color = GameTheme.steel.withValues(alpha: 0.92 * invulnAlpha)
+      ..strokeWidth = 0.075
+      ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(Offset.zero, GameConstants.playerRadius * 1.8, glow);
-    canvas.drawCircle(Offset.zero, GameConstants.playerRadius, bodyPaint);
-    canvas.drawCircle(
-      Offset.zero,
-      GameConstants.playerRadius * 0.54,
-      corePaint,
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(0, 0.1), width: 1.15, height: 0.7),
+      shadow,
+    );
+    canvas.drawCircle(Offset.zero, GameConstants.playerRadius * 2.05, glow);
+
+    canvas.save();
+    canvas.rotate(aim.angleRadians());
+    if (isDashing) {
+      _renderDashSlipstream(canvas, accent.withValues(alpha: 0.48));
+    }
+    canvas.drawPath(_runnerSilhouette(), suitPaint);
+    canvas.drawPath(_runnerArmor(), armorPaint);
+    canvas.drawLine(
+      const Offset(0.12, -0.09),
+      const Offset(0.52, -0.09),
+      weaponPaint,
     );
     canvas.drawLine(
-      (game.input.aimWorld * 0.18).toOffset(),
-      (game.input.aimWorld * 0.78).toOffset(),
-      aimPaint,
+      const Offset(0.16, 0.11),
+      const Offset(0.5, 0.11),
+      weaponPaint,
+    );
+    canvas.drawLine(
+      const Offset(0.03, -0.18),
+      const Offset(0.32, -0.18),
+      visorPaint,
+    );
+    canvas.drawLine(
+      const Offset(0.03, 0.18),
+      const Offset(0.22, 0.18),
+      visorPaint,
+    );
+    canvas.restore();
+
+    final staminaReady = stamina >= dashCost;
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: 0.66),
+      -math.pi / 2,
+      math.pi * 2 * staminaRatio.clamp(0, 1).toDouble(),
+      false,
+      Paint()
+        ..color = (staminaReady ? GameTheme.acid : GameTheme.dimSteel)
+            .withValues(alpha: 0.58)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.035
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  Path _runnerSilhouette() {
+    return Path()
+      ..moveTo(0.54, 0)
+      ..lineTo(0.24, -0.32)
+      ..lineTo(-0.32, -0.27)
+      ..lineTo(-0.48, -0.08)
+      ..lineTo(-0.3, 0)
+      ..lineTo(-0.48, 0.08)
+      ..lineTo(-0.32, 0.27)
+      ..lineTo(0.24, 0.32)
+      ..close();
+  }
+
+  Path _runnerArmor() {
+    return Path()
+      ..moveTo(0.26, 0)
+      ..lineTo(0.02, -0.21)
+      ..lineTo(-0.23, -0.16)
+      ..lineTo(-0.08, 0)
+      ..lineTo(-0.23, 0.16)
+      ..lineTo(0.02, 0.21)
+      ..close();
+  }
+
+  void _renderDashSlipstream(Canvas canvas, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.06
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      const Offset(-0.38, -0.24),
+      const Offset(-1.25, -0.46),
+      paint,
+    );
+    canvas.drawLine(const Offset(-0.48, 0), const Offset(-1.48, 0), paint);
+    canvas.drawLine(
+      const Offset(-0.38, 0.24),
+      const Offset(-1.25, 0.46),
+      paint,
     );
   }
 }

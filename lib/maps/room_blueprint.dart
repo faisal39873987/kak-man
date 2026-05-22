@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'room_visual_theme.dart';
+
 enum RoomTier { entry, standard, escalated, apex }
 
 enum RoomBlueprintKind { authored, procedural }
@@ -47,6 +49,7 @@ class RoomBlueprint {
     required RoomObstacleBuilder buildObstacles,
     this.kind = RoomBlueprintKind.authored,
     this.weight = 1,
+    this.visualTheme = RoomVisualTheme.undercity,
   }) : _buildObstacles = buildObstacles {
     if (id.trim().isEmpty) {
       throw ArgumentError.value(id, 'id', 'Room blueprint id is required.');
@@ -68,6 +71,7 @@ class RoomBlueprint {
   final RoomTier maxTier;
   final RoomBlueprintKind kind;
   final int weight;
+  final RoomVisualTheme visualTheme;
   final RoomObstacleBuilder _buildObstacles;
 
   bool supports(RoomTier tier) {

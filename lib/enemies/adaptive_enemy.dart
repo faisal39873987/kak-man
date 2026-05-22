@@ -285,8 +285,11 @@ class AdaptiveEnemy extends BodyComponent<NerveRunnerGame> {
     if (isTelegraphing) {
       _renderTelegraph(canvas, telegraphPaint);
     }
-    canvas.drawCircle(Offset.zero, hitRadius, shell);
-    canvas.drawCircle(Offset.zero, hitRadius * 0.58, core);
+    final facing = _enemyFacing();
+    canvas.save();
+    canvas.rotate(facing.angleRadians());
+    _renderArchetypeBody(canvas, shell, core, activeAlpha);
+    canvas.restore();
     canvas.drawArc(
       Rect.fromCircle(center: Offset.zero, radius: hitRadius * 1.16),
       -math.pi / 2,
@@ -294,6 +297,155 @@ class AdaptiveEnemy extends BodyComponent<NerveRunnerGame> {
       false,
       healthPaint,
     );
+  }
+
+  Vector2 _enemyFacing() {
+    if (isTelegraphing) {
+      return _attackDirection.normalizedOrZero();
+    }
+    if (body.linearVelocity.length2 > 0.001) {
+      return body.linearVelocity.normalizedOrZero();
+    }
+    final toPlayer = game.player.position - body.position;
+    return toPlayer.length2 > 0.001
+        ? toPlayer.normalizedOrZero()
+        : Vector2(1, 0);
+  }
+
+  void _renderArchetypeBody(
+    Canvas canvas,
+    Paint shell,
+    Paint core,
+    double activeAlpha,
+  ) {
+    switch (archetype.behavior) {
+      case EnemyBehavior.stalker:
+        _renderStalker(canvas, shell, core, activeAlpha);
+      case EnemyBehavior.cutter:
+        _renderCutter(canvas, shell, core, activeAlpha);
+      case EnemyBehavior.bulwark:
+        _renderBulwark(canvas, shell, core, activeAlpha);
+      case EnemyBehavior.boss:
+        canvas.drawCircle(Offset.zero, hitRadius, shell);
+        canvas.drawCircle(Offset.zero, hitRadius * 0.58, core);
+    }
+  }
+
+  void _renderStalker(
+    Canvas canvas,
+    Paint shell,
+    Paint core,
+    double activeAlpha,
+  ) {
+    final body = Path()
+      ..moveTo(hitRadius * 1.18, 0)
+      ..lineTo(-hitRadius * 0.32, -hitRadius * 0.86)
+      ..lineTo(-hitRadius * 0.92, 0)
+      ..lineTo(-hitRadius * 0.32, hitRadius * 0.86)
+      ..close();
+    canvas.drawPath(body, shell);
+    canvas.drawPath(
+      Path()
+        ..moveTo(hitRadius * 0.46, 0)
+        ..lineTo(-hitRadius * 0.18, -hitRadius * 0.42)
+        ..lineTo(-hitRadius * 0.34, 0)
+        ..lineTo(-hitRadius * 0.18, hitRadius * 0.42)
+        ..close(),
+      core,
+    );
+    canvas.drawLine(
+      Offset(hitRadius * 0.18, -hitRadius * 0.2),
+      Offset(hitRadius * 0.58, -hitRadius * 0.06),
+      _enemyDetailPaint(activeAlpha),
+    );
+    canvas.drawLine(
+      Offset(hitRadius * 0.18, hitRadius * 0.2),
+      Offset(hitRadius * 0.58, hitRadius * 0.06),
+      _enemyDetailPaint(activeAlpha),
+    );
+  }
+
+  void _renderCutter(
+    Canvas canvas,
+    Paint shell,
+    Paint core,
+    double activeAlpha,
+  ) {
+    final blade = Path()
+      ..moveTo(hitRadius * 1.28, 0)
+      ..quadraticBezierTo(
+        hitRadius * 0.18,
+        -hitRadius * 1.05,
+        -hitRadius,
+        -hitRadius * 0.48,
+      )
+      ..lineTo(-hitRadius * 0.36, 0)
+      ..lineTo(-hitRadius, hitRadius * 0.48)
+      ..quadraticBezierTo(
+        hitRadius * 0.18,
+        hitRadius * 1.05,
+        hitRadius * 1.28,
+        0,
+      )
+      ..close();
+    canvas.drawPath(blade, shell);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(-hitRadius * 0.14, 0),
+        width: hitRadius * 1.08,
+        height: hitRadius * 0.8,
+      ),
+      core,
+    );
+    final detail = _enemyDetailPaint(activeAlpha)..strokeWidth = 0.035;
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: hitRadius * 0.92),
+      -0.78,
+      1.56,
+      false,
+      detail,
+    );
+  }
+
+  void _renderBulwark(
+    Canvas canvas,
+    Paint shell,
+    Paint core,
+    double activeAlpha,
+  ) {
+    final shield = Path()
+      ..moveTo(hitRadius * 0.88, 0)
+      ..lineTo(hitRadius * 0.34, -hitRadius)
+      ..lineTo(-hitRadius * 0.66, -hitRadius * 0.76)
+      ..lineTo(-hitRadius, 0)
+      ..lineTo(-hitRadius * 0.66, hitRadius * 0.76)
+      ..lineTo(hitRadius * 0.34, hitRadius)
+      ..close();
+    canvas.drawPath(shield, shell);
+    canvas.drawPath(
+      Path()
+        ..moveTo(hitRadius * 0.36, 0)
+        ..lineTo(hitRadius * 0.08, -hitRadius * 0.55)
+        ..lineTo(-hitRadius * 0.46, -hitRadius * 0.38)
+        ..lineTo(-hitRadius * 0.62, 0)
+        ..lineTo(-hitRadius * 0.46, hitRadius * 0.38)
+        ..lineTo(hitRadius * 0.08, hitRadius * 0.55)
+        ..close(),
+      core,
+    );
+    final detail = _enemyDetailPaint(activeAlpha);
+    canvas.drawLine(
+      Offset(-hitRadius * 0.78, 0),
+      Offset(hitRadius * 0.58, 0),
+      detail,
+    );
+  }
+
+  Paint _enemyDetailPaint(double activeAlpha) {
+    return Paint()
+      ..color = GameTheme.acid.withValues(alpha: 0.76 * activeAlpha)
+      ..strokeWidth = 0.045
+      ..strokeCap = StrokeCap.round;
   }
 
   void _renderTelegraph(Canvas canvas, Paint paint) {

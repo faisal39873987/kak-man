@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import '../core/config/game_constants.dart';
 import '../systems/difficulty/dynamic_difficulty_system.dart';
 import 'arena_obstacle.dart';
+import 'arena_set_dressing.dart';
 import 'arena_wall.dart';
 import 'combat_room.dart';
 import 'neon_arena_background.dart';
@@ -55,6 +56,7 @@ class RoomGenerator {
       random: random,
       roomIndex: roomIndex,
       obstacleRects: obstacleRects,
+      blueprint: blueprint,
     );
     final enemySpawns = _enemySpawns(
       bounds: bounds,
@@ -69,13 +71,27 @@ class RoomGenerator {
     final bottomRight = Vector2(bounds.right, bounds.bottom);
     final bottomLeft = Vector2(bounds.left, bounds.bottom);
     final components = <Component>[
-      NeonArenaBackground(bounds: bounds, seed: seed),
+      NeonArenaBackground(
+        bounds: bounds,
+        seed: seed,
+        theme: blueprint.visualTheme,
+      ),
+      ArenaSetDressing(
+        bounds: bounds,
+        seed: seed + roomIndex * 19,
+        theme: blueprint.visualTheme,
+      ),
       ...hazards,
-      for (final obstacle in obstacleRects) ArenaObstacle(bounds: obstacle),
-      ArenaWall(topLeft, topRight),
-      ArenaWall(topRight, bottomRight),
-      ArenaWall(bottomRight, bottomLeft),
-      ArenaWall(bottomLeft, topLeft),
+      for (var i = 0; i < obstacleRects.length; i += 1)
+        ArenaObstacle(
+          bounds: obstacleRects[i],
+          theme: blueprint.visualTheme,
+          seed: seed + i * 37,
+        ),
+      ArenaWall(topLeft, topRight, color: blueprint.visualTheme.primary),
+      ArenaWall(topRight, bottomRight, color: blueprint.visualTheme.primary),
+      ArenaWall(bottomRight, bottomLeft, color: blueprint.visualTheme.primary),
+      ArenaWall(bottomLeft, topLeft, color: blueprint.visualTheme.primary),
     ];
 
     return GeneratedRoom(
@@ -85,6 +101,7 @@ class RoomGenerator {
         playerSpawn: spawn,
         enemySpawns: enemySpawns,
         seed: seed,
+        visualTheme: blueprint.visualTheme,
       ),
       components: components,
     );
@@ -143,6 +160,7 @@ class RoomGenerator {
     required math.Random random,
     required int roomIndex,
     required List<Rect> obstacleRects,
+    required RoomBlueprint blueprint,
   }) {
     if (roomIndex < 2) {
       return <PulseHazard>[];
@@ -177,6 +195,7 @@ class RoomGenerator {
           windup: 0.64,
           active: 0.32,
           seedOffset: random.nextDouble() * 2,
+          theme: blueprint.visualTheme,
         ),
       );
     }

@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 
 import '../core/theme/game_theme.dart';
 import '../engine/nerve_runner_game.dart';
+import 'room_visual_theme.dart';
 
 class PulseHazard extends Component with HasGameReference<NerveRunnerGame> {
   PulseHazard({
@@ -14,6 +15,7 @@ class PulseHazard extends Component with HasGameReference<NerveRunnerGame> {
     required this.active,
     required this.seedOffset,
     this.damage = 1,
+    this.theme = RoomVisualTheme.undercity,
   }) : super(priority: -8);
 
   final Rect bounds;
@@ -22,6 +24,7 @@ class PulseHazard extends Component with HasGameReference<NerveRunnerGame> {
   final double active;
   final double seedOffset;
   final int damage;
+  final RoomVisualTheme theme;
 
   double _clock = 0;
   bool _damageResolved = false;
@@ -61,10 +64,10 @@ class PulseHazard extends Component with HasGameReference<NerveRunnerGame> {
   @override
   void render(Canvas canvas) {
     final base = Paint()
-      ..color = GameTheme.blood.withValues(alpha: 0.07)
+      ..color = theme.hazard.withValues(alpha: 0.07)
       ..style = PaintingStyle.fill;
     final edge = Paint()
-      ..color = GameTheme.blood.withValues(alpha: 0.26)
+      ..color = theme.hazard.withValues(alpha: 0.28)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.035;
     canvas.drawRect(bounds, base);
@@ -78,7 +81,7 @@ class PulseHazard extends Component with HasGameReference<NerveRunnerGame> {
           ? 0.46 + math.sin(game.elapsedTime * 38) * 0.18
           : 0.14 + progress * 0.3;
       final hot = Paint()
-        ..color = (_isActive ? GameTheme.blood : GameTheme.warning).withValues(
+        ..color = (_isActive ? theme.hazard : GameTheme.warning).withValues(
           alpha: pulseAlpha,
         )
         ..style = PaintingStyle.fill;

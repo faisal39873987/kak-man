@@ -5,7 +5,9 @@ import 'package:flame/components.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_shot_nerve_runner/core/config/game_constants.dart';
 import 'package:one_shot_nerve_runner/maps/arena_obstacle.dart';
+import 'package:one_shot_nerve_runner/maps/arena_set_dressing.dart';
 import 'package:one_shot_nerve_runner/maps/arena_wall.dart';
+import 'package:one_shot_nerve_runner/maps/neon_arena_background.dart';
 import 'package:one_shot_nerve_runner/maps/pulse_hazard.dart';
 import 'package:one_shot_nerve_runner/maps/room_blueprint.dart';
 import 'package:one_shot_nerve_runner/maps/room_catalog.dart';
@@ -20,6 +22,8 @@ void main() {
     for (final blueprint in catalog.blueprints) {
       expect(blueprint.kind, RoomBlueprintKind.authored);
       expect(blueprint.weight, greaterThan(0));
+      expect(blueprint.visualTheme.id.trim(), blueprint.visualTheme.id);
+      expect(blueprint.visualTheme.id, isNotEmpty);
       expect(
         ids.add(blueprint.id),
         isTrue,
@@ -36,6 +40,7 @@ void main() {
     }
 
     expect(catalog.fallbackBlueprint.kind, RoomBlueprintKind.procedural);
+    expect(catalog.fallbackBlueprint.visualTheme.id, isNotEmpty);
   });
 
   test('default room blueprints produce bounded obstacles', () {
@@ -145,6 +150,7 @@ int _roomIndexForTier(RoomTier tier) {
 Map<String, Object?> _roomSignature(GeneratedRoom generated) {
   return <String, Object?>{
     'index': generated.room.index,
+    'visualTheme': generated.room.visualTheme.id,
     'bounds': _rect(generated.room.bounds),
     'playerSpawn': _vector(generated.room.playerSpawn),
     'enemySpawns': generated.room.enemySpawns.map(_vector).toList(),
@@ -168,6 +174,8 @@ Map<String, Object?> _roomSignature(GeneratedRoom generated) {
         .whereType<ArenaWall>()
         .map((wall) => <Object>[_vector(wall.start), _vector(wall.end)])
         .toList(),
+    'backgrounds': generated.components.whereType<NeonArenaBackground>().length,
+    'setDressing': generated.components.whereType<ArenaSetDressing>().length,
   };
 }
 

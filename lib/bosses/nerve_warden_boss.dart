@@ -140,7 +140,11 @@ class NerveWardenBoss extends AdaptiveEnemy {
       ..color = phaseColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.12;
-    final core = Paint()..color = GameTheme.voidBlack;
+    final core = Paint()
+      ..shader = Gradient.radial(Offset.zero, hitRadius, <Color>[
+        Color.lerp(GameTheme.voidBlack, phaseColor, 0.24)!,
+        GameTheme.voidBlack,
+      ]);
     final eye = Paint()..color = GameTheme.acid;
     if (_shockwaveWindup > 0) {
       final progress = (1 - (_shockwaveWindup / _shockwaveWindupDuration))
@@ -156,8 +160,7 @@ class NerveWardenBoss extends AdaptiveEnemy {
     }
 
     canvas.drawCircle(Offset.zero, hitRadius * 2.2, glow);
-    canvas.drawCircle(Offset.zero, hitRadius, core);
-    canvas.drawCircle(Offset.zero, hitRadius, shell);
+    _renderWardenShell(canvas, phaseColor, core, shell);
     canvas.drawArc(
       Rect.fromCircle(center: Offset.zero, radius: hitRadius * 1.18),
       -math.pi / 2,
@@ -170,6 +173,47 @@ class NerveWardenBoss extends AdaptiveEnemy {
     );
     canvas.drawCircle(Offset(-0.24, -0.08), 0.09, eye);
     canvas.drawCircle(Offset(0.24, -0.08), 0.09, eye);
+    canvas.drawLine(
+      Offset(-0.48, 0.24),
+      Offset(0.48, 0.24),
+      Paint()
+        ..color = phaseColor.withValues(alpha: 0.72)
+        ..strokeWidth = 0.055
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _renderWardenShell(
+    Canvas canvas,
+    Color phaseColor,
+    Paint core,
+    Paint shell,
+  ) {
+    final carapace = Path()
+      ..moveTo(0, -hitRadius * 1.08)
+      ..lineTo(hitRadius * 0.92, -hitRadius * 0.42)
+      ..lineTo(hitRadius * 0.7, hitRadius * 0.86)
+      ..lineTo(0, hitRadius * 1.1)
+      ..lineTo(-hitRadius * 0.7, hitRadius * 0.86)
+      ..lineTo(-hitRadius * 0.92, -hitRadius * 0.42)
+      ..close();
+    canvas.drawPath(carapace, core);
+    canvas.drawPath(carapace, shell);
+    final plate = Paint()
+      ..color = phaseColor.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.045;
+    canvas.drawLine(Offset(0, -hitRadius * 0.82), Offset.zero, plate);
+    canvas.drawLine(
+      Offset.zero,
+      Offset(-hitRadius * 0.46, hitRadius * 0.62),
+      plate,
+    );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(hitRadius * 0.46, hitRadius * 0.62),
+      plate,
+    );
   }
 
   Color get _phaseColor {

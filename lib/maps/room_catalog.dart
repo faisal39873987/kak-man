@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'room_blueprint.dart';
+import 'room_visual_theme.dart';
 
 class RoomCatalog {
   RoomCatalog({
@@ -17,6 +18,7 @@ class RoomCatalog {
         minTier: RoomTier.entry,
         maxTier: RoomTier.apex,
         weight: 3,
+        visualTheme: RoomVisualTheme.capacitor,
         buildObstacles: _splitCapacitorObstacles,
       ),
       RoomBlueprint(
@@ -24,6 +26,7 @@ class RoomCatalog {
         minTier: RoomTier.entry,
         maxTier: RoomTier.apex,
         weight: 3,
+        visualTheme: RoomVisualTheme.railYard,
         buildObstacles: _parallelRailsObstacles,
       ),
       RoomBlueprint(
@@ -31,7 +34,24 @@ class RoomCatalog {
         minTier: RoomTier.standard,
         maxTier: RoomTier.apex,
         weight: 2,
+        visualTheme: RoomVisualTheme.relay,
         buildObstacles: _crossRelayObstacles,
+      ),
+      RoomBlueprint(
+        id: 'reactor_spine',
+        minTier: RoomTier.standard,
+        maxTier: RoomTier.apex,
+        weight: 2,
+        visualTheme: RoomVisualTheme.reactor,
+        buildObstacles: _reactorSpineObstacles,
+      ),
+      RoomBlueprint(
+        id: 'dead_clinic',
+        minTier: RoomTier.escalated,
+        maxTier: RoomTier.apex,
+        weight: 2,
+        visualTheme: RoomVisualTheme.clinic,
+        buildObstacles: _deadClinicObstacles,
       ),
     ],
     fallbackBlueprint: _legacyProceduralBlueprint,
@@ -80,6 +100,7 @@ final RoomBlueprint _legacyProceduralBlueprint = RoomBlueprint(
   minTier: RoomTier.entry,
   maxTier: RoomTier.apex,
   kind: RoomBlueprintKind.procedural,
+  visualTheme: RoomVisualTheme.undercity,
   buildObstacles: (context) {
     return switch (context.roomIndex % 3) {
       0 => _splitCapacitorObstacles(context),
@@ -141,6 +162,27 @@ List<Rect> _crossRelayObstacles(RoomBuildContext context) {
       width: 2.4,
       height: 2.2,
     ),
+  ]);
+}
+
+List<Rect> _reactorSpineObstacles(RoomBuildContext context) {
+  final centerY = context.centeredJitter(0.6);
+  return _withEscalationObstacle(context, <Rect>[
+    Rect.fromCenter(center: Offset(-3.8, centerY), width: 2.1, height: 7.2),
+    Rect.fromCenter(center: Offset(1.2, centerY - 3.9), width: 4.8, height: 1),
+    Rect.fromCenter(center: Offset(1.2, centerY + 3.9), width: 4.8, height: 1),
+    Rect.fromCenter(center: Offset(7.1, centerY), width: 2.4, height: 5.6),
+  ]);
+}
+
+List<Rect> _deadClinicObstacles(RoomBuildContext context) {
+  final yBias = context.centeredJitter(0.85);
+  return _withEscalationObstacle(context, <Rect>[
+    Rect.fromCenter(center: Offset(-4.4, yBias - 3.4), width: 5.2, height: 1),
+    Rect.fromCenter(center: Offset(-4.4, yBias + 3.4), width: 5.2, height: 1),
+    Rect.fromCenter(center: Offset(1.7, yBias), width: 1.1, height: 5.4),
+    Rect.fromCenter(center: Offset(6.8, yBias - 2.8), width: 3.2, height: 1.2),
+    Rect.fromCenter(center: Offset(9.2, yBias + 3.0), width: 2.2, height: 2.1),
   ]);
 }
 
