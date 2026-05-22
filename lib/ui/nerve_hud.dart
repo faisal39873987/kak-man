@@ -625,43 +625,198 @@ class _RunStatePanel extends StatelessWidget {
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.54),
       child: Center(
-        child: _GlassPanel(
-          child: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  snapshot.dead ? 'RUN TERMINATED' : 'RUN PAUSED',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(18),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: _GlassPanel(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    snapshot.dead
+                        ? Icons.personal_injury_rounded
+                        : Icons.pause_circle_rounded,
                     color: snapshot.dead ? GameTheme.blood : GameTheme.cyan,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
+                    size: 30,
                   ),
-                ),
-                const SizedBox(height: 16),
-                _SaveStatusLine(status: snapshot.saveSyncStatus),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    _HudIconButton(
-                      icon: Icons.restart_alt_rounded,
-                      tooltip: 'Restart run',
-                      onPressed: () => onRestart(),
+                  const SizedBox(height: 10),
+                  Text(
+                    snapshot.dead ? 'RUN TERMINATED' : 'RUN PAUSED',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: snapshot.dead ? GameTheme.blood : GameTheme.cyan,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
                     ),
-                    if (!snapshot.dead) ...<Widget>[
-                      const SizedBox(width: 12),
+                  ),
+                  const SizedBox(height: 14),
+                  _RunSummaryGrid(
+                    title: snapshot.dead ? 'RUN SUMMARY' : 'CURRENT RUN',
+                    summary: snapshot.runSummary,
+                  ),
+                  const SizedBox(height: 14),
+                  _SaveStatusLine(status: snapshot.saveSyncStatus),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
                       _HudIconButton(
-                        icon: Icons.play_arrow_rounded,
-                        tooltip: 'Resume',
-                        onPressed: onPause,
+                        icon: Icons.restart_alt_rounded,
+                        tooltip: 'Restart run',
+                        onPressed: () => onRestart(),
                       ),
+                      if (!snapshot.dead) ...<Widget>[
+                        const SizedBox(width: 12),
+                        _HudIconButton(
+                          icon: Icons.play_arrow_rounded,
+                          tooltip: 'Resume',
+                          onPressed: onPause,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RunSummaryGrid extends StatelessWidget {
+  const _RunSummaryGrid({required this.title, required this.summary});
+
+  final String title;
+  final RunSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: GameTheme.voidBlack.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: GameTheme.cyan.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: GameTheme.acid,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: <Widget>[
+                _SummaryTile(label: 'TIME', value: _duration(summary)),
+                _SummaryTile(label: 'ROOM', value: '${summary.roomReached}'),
+                _SummaryTile(label: 'SCORE', value: '${summary.score}'),
+                _SummaryTile(label: 'KILLS', value: '${summary.kills}'),
+                _SummaryTile(label: 'NERVE', value: '+${summary.nerveEarned}'),
+                _SummaryTile(
+                  label: 'ACCURACY',
+                  value: '${summary.accuracyPercent}%',
+                ),
+                _SummaryTile(
+                  label: 'BEST COMBO',
+                  value: 'x${summary.bestCombo}',
+                ),
+                _SummaryTile(
+                  label: 'PERFECT',
+                  value: '${summary.perfectDodges}',
+                ),
+                _SummaryTile(label: 'DASHES', value: '${summary.dashes}'),
+                _SummaryTile(
+                  label: 'LOW HP',
+                  value: '${summary.lowHealthSeconds}s',
+                ),
+                _SummaryTile(
+                  label: 'TRAIT',
+                  value: summary.traitLabel,
+                  wide: true,
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _duration(RunSummary summary) {
+    final totalSeconds = summary.secondsSurvived.round();
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (minutes <= 0) {
+      return '${seconds}s';
+    }
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    this.wide = false,
+  });
+
+  final String label;
+  final String value;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: wide ? 178 : 92,
+      height: 54,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: GameTheme.panel.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: GameTheme.dimSteel.withValues(alpha: 0.16)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: GameTheme.dimSteel,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: GameTheme.steel,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -644,6 +644,7 @@ class NerveRunnerGame extends Forge2DGame {
     if (!_loaded) {
       return;
     }
+    final profile = evolution.profile;
     hud.value = HudSnapshot(
       health: player.health,
       maxHealth: player.maxHealth,
@@ -668,6 +669,21 @@ class NerveRunnerGame extends Forge2DGame {
       progression: metaProgression.snapshot(),
       showingProgression: _showingProgression,
       saveSyncStatus: _saveService.syncStatus,
+      runSummary: RunSummary(
+        score: score,
+        roomReached: roomIndex,
+        kills: runKills,
+        nerveEarned: runNerve,
+        bestCombo: math.max(_saveData.bestCombo, combo.bestChain),
+        bestRoom: math.max(_saveData.bestRoom, roomIndex),
+        secondsSurvived: elapsedTime,
+        shotsFired: profile.shotsFired,
+        shotsHit: profile.shotsHit,
+        dashes: profile.dashes,
+        perfectDodges: profile.perfectDodges,
+        lowHealthSeconds: profile.lowHealthSeconds,
+        traitLabel: evolution.activeTraitLabel,
+      ),
     );
   }
 }

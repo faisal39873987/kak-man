@@ -4,6 +4,9 @@
 *.pyc
 *.swp
 .DS_Store
+._*
+**/._*
+flutter_*.log
 .atom/
 .build/
 .buildlog/
