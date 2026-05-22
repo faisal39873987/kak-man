@@ -82,8 +82,9 @@ class RunnerPlayer extends BodyComponent<NerveRunnerGame> {
     _invulnerability = (_invulnerability - dt).clamp(0, 10);
 
     final movement = game.input.movementVector();
-    if (game.input.consumeDash()) {
-      _tryDash(movement);
+    if (game.input.hasDashQueued && _canDash) {
+      game.input.consumeDash();
+      _startDash(movement);
     }
 
     Vector2 targetVelocity;
@@ -124,10 +125,9 @@ class RunnerPlayer extends BodyComponent<NerveRunnerGame> {
     _hurtPulse = false;
   }
 
-  void _tryDash(Vector2 movement) {
-    if (_dashCooldown > 0 || stamina < dashCost) {
-      return;
-    }
+  bool get _canDash => _dashCooldown <= 0 && stamina >= dashCost;
+
+  void _startDash(Vector2 movement) {
     final direction = movement.length2 > 0
         ? movement.normalizedOrZero()
         : game.input.aimWorld;

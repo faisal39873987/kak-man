@@ -11,9 +11,13 @@ class GameConstants {
   static const double playerDashSpeed = 28;
   static const double playerDashDuration = 0.11;
   static const double playerDashCooldown = 0.28;
+  static const double playerDashInputBuffer = 0.14;
   static const double staminaMax = 100;
   static const double staminaRegenPerSecond = 34;
   static const double dashStaminaCost = 28;
+  static const double aimAssistRange = 8.5;
+  static const double aimAssistConeRadians = 0.24;
+  static const double aimAssistBlend = 0.42;
   static const double perfectDodgeThreatMargin = 0.36;
   static const double perfectDodgeStaminaRefund = 18;
   static const double perfectDodgeInvulnerabilitySeconds = 0.18;

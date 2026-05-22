@@ -25,6 +25,7 @@ import '../progression/reward_choice.dart';
 import '../save/game_save_data.dart';
 import '../save/save_service.dart';
 import '../systems/audio/reactive_audio_system.dart';
+import '../systems/combat/aim_assist_system.dart';
 import '../systems/combat/combo_chain_system.dart';
 import '../systems/difficulty/dynamic_difficulty_system.dart';
 import '../systems/feedback/hit_feedback_system.dart';
@@ -61,6 +62,11 @@ class NerveRunnerGame extends Forge2DGame {
   late EnemyFactory enemyFactory;
 
   DynamicDifficultySystem difficulty = DynamicDifficultySystem();
+  AimAssistSystem aimAssist = const AimAssistSystem(
+    range: GameConstants.aimAssistRange,
+    coneRadians: GameConstants.aimAssistConeRadians,
+    blend: GameConstants.aimAssistBlend,
+  );
   ComboChainSystem combo = ComboChainSystem();
   PlayerEvolutionSystem evolution = PlayerEvolutionSystem();
   MetaProgressionSystem metaProgression = MetaProgressionSystem();
@@ -118,6 +124,7 @@ class NerveRunnerGame extends Forge2DGame {
     runPaused = false;
     input.isFiring = false;
     input.clearTouchMovement();
+    input.clearTransient();
     _activeRewards = <RewardChoice>[];
     _showingProgression = false;
     elapsedTime = 0;
@@ -163,7 +170,7 @@ class NerveRunnerGame extends Forge2DGame {
   }
 
   void queueDash() {
-    input.dashQueued = true;
+    input.queueDash();
   }
 
   void startFire() {
@@ -189,7 +196,7 @@ class NerveRunnerGame extends Forge2DGame {
       if (key == LogicalKeyboardKey.space ||
           key == LogicalKeyboardKey.shiftLeft ||
           key == LogicalKeyboardKey.shiftRight) {
-        input.dashQueued = true;
+        input.queueDash();
       }
       if (key == LogicalKeyboardKey.keyP || key == LogicalKeyboardKey.escape) {
         togglePause();
@@ -205,6 +212,10 @@ class NerveRunnerGame extends Forge2DGame {
       return;
     }
     runPaused = !runPaused;
+    if (runPaused) {
+      input.isFiring = false;
+      input.clearTransient();
+    }
     _refreshHud();
   }
 
@@ -247,6 +258,7 @@ class NerveRunnerGame extends Forge2DGame {
     }
 
     final scaledDt = slowMotion.updateAndScale(dt);
+    input.update(scaledDt);
     elapsedTime += scaledDt;
     _weaponBlockedFeedbackCooldown = (_weaponBlockedFeedbackCooldown - scaledDt)
         .clamp(0, 10);
@@ -282,11 +294,13 @@ class NerveRunnerGame extends Forge2DGame {
   }
 
   void _tryFire() {
-    final origin = player.position + input.aimWorld * 0.55;
+    final rawDirection = input.aimWorld.normalizedOrZero();
+    final origin = player.position + rawDirection * 0.55;
+    final fireDirection = _assistedFireDirection(origin, rawDirection);
     final fired = weapon.tryFire(
       WeaponFireContext(
         origin: origin,
-        direction: input.aimWorld.normalizedOrZero(),
+        direction: fireDirection,
         damageScale: evolution.shotDamageMultiplier * combo.multiplier,
         spawn: spawnProjectile,
       ),
@@ -299,8 +313,28 @@ class NerveRunnerGame extends Forge2DGame {
       return;
     }
     evolution.registerShot();
-    feedback.muzzle(origin, input.aimWorld);
+    feedback.muzzle(origin, fireDirection);
     unawaited(audio.cue(AudioCue.shot));
+  }
+
+  Vector2 _assistedFireDirection(Vector2 origin, Vector2 rawDirection) {
+    return aimAssist.resolve(
+      origin: origin,
+      rawDirection: rawDirection,
+      targets: enemies.map(
+        (enemy) => AimAssistTarget(
+          position: enemy.position,
+          radius: enemy.hitRadius,
+          active: !enemy.isDead,
+        ),
+      ),
+      blockers: obstructions.map(
+        (obstruction) => AimAssistBlocker(
+          bounds: obstruction.bounds,
+          active: obstruction.blocksProjectiles,
+        ),
+      ),
+    );
   }
 
   void spawnProjectile(BulletProjectile projectile) {

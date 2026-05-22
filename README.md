@@ -47,5 +47,5 @@ bash scripts/verify.sh
 ```
 
 The verification gate installs dependencies, runs static analysis, executes the
-test suite, and builds the release web artifact. GitHub Actions runs the same
-script on pushes and pull requests to `main`.
+test suite, and builds the release web artifact without the optional wasm dry
+run. GitHub Actions runs the same script on pushes and pull requests to `main`.

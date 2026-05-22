@@ -14,6 +14,6 @@ echo "==> Running tests"
 flutter test
 
 echo "==> Building release web artifact"
-flutter build web --release
+flutter build web --release --no-wasm-dry-run
 
 echo "==> One Shot: Nerve Runner verification passed"

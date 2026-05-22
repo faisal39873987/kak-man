@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
 
+import '../config/game_constants.dart';
 import '../math/vector_math.dart';
 
 class InputState {
@@ -10,6 +11,21 @@ class InputState {
   Vector2 touchMovement = Vector2.zero();
   bool isFiring = false;
   bool dashQueued = false;
+  double _dashBufferRemaining = 0;
+
+  double get dashBufferRemaining => _dashBufferRemaining;
+  bool get hasDashQueued => dashQueued && _dashBufferRemaining > 0;
+
+  void update(double dt) {
+    if (_dashBufferRemaining <= 0) {
+      dashQueued = false;
+      return;
+    }
+    _dashBufferRemaining = (_dashBufferRemaining - dt).clamp(0, 10);
+    if (_dashBufferRemaining <= 0) {
+      dashQueued = false;
+    }
+  }
 
   void setKey(LogicalKeyboardKey key, {required bool pressed}) {
     if (pressed) {
@@ -42,6 +58,11 @@ class InputState {
     touchMovement.setZero();
   }
 
+  void queueDash({double bufferSeconds = GameConstants.playerDashInputBuffer}) {
+    dashQueued = true;
+    _dashBufferRemaining = bufferSeconds.clamp(0, 10);
+  }
+
   void setAimFromOffset(Offset offset, Vector2 origin, Vector2 worldTarget) {
     if (offset.distanceSquared > 0) {
       setAimWorld(origin, worldTarget);
@@ -71,8 +92,9 @@ class InputState {
   }
 
   bool consumeDash() {
-    final queued = dashQueued;
+    final queued = hasDashQueued;
     dashQueued = false;
+    _dashBufferRemaining = 0;
     return queued;
   }
 
@@ -83,5 +105,6 @@ class InputState {
 
   void clearTransient() {
     dashQueued = false;
+    _dashBufferRemaining = 0;
   }
 }
